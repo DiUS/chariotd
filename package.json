@@ -1,0 +1,25 @@
+{
+  "name": "chariotd",
+  "version": "1.0.0",
+  "description": "Daemon for bringing AWS IoT Core services into Linux user-space.",
+  "main": "src/main.js",
+  "bin": {
+    "chariotd": "src/main.js"
+  },
+  "scripts": {
+    "test": "for t in test/*.js; do ./$t || exit 1; done"
+  },
+  "author": "jmattsson@dius.com.au",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "aws-iot-device-sdk": "2.2.6",
+    "node-getopt": "0.3.2"
+  },
+  "bundledDependencies": [
+    "aws-iot-device-sdk",
+    "node-getopt"
+  ],
+  "files": [
+    "src/*.js"
+  ]
+}
