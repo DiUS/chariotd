@@ -8,7 +8,8 @@ const cmdline = Getopt.create([
    'path to the root CA certificate (mandatory)' ],
  [ '', 'certstore=DIR',
    'base directory where device certificates are kept (mandatory)' ],
- // TODO: fleet provisioning config
+ [ '', 'fleetprov=CONFIGPATH',
+   'enable Fleet Provisioning with configuration read from CONFIGPATH' ],
  [ '', 'services=THING:DIR+',
    'use service definitions in DIR for THING' ],
  [ '', 'updates=THING:DIR+',

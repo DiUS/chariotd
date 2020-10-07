@@ -4,9 +4,11 @@
 
 const awsiot = require('aws-iot-device-sdk');
 const fs = require('fs');
+const child_process = require('child_process');
 const CertStore = require('./certstore.js');
 const Shadow = require('./shadow.js');
 const DirWatch = require('./dirwatch.js');
+const FleetProvisioning = require('./fleet_provisioning.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
 const shadowMerge = require('./shadow_merge.js');
@@ -41,6 +43,10 @@ function updateShadow(thing, dir, fname) {
     console.log(`No connection available for '${thing}' yet, update to '${svcname}' delayed.`);
 }
 
+
+function delayedExit(sec) {
+  setTimeout(() => process.exit(1), sec*1000);
+}
 
 // -- Setup phase --------------------------------------------------------
 
@@ -89,14 +95,8 @@ function checkCommsAttempts() {
     const available = ourcerts.available;
     if (available.length > 1) {
       console.info('Rotating preferred certificate for recovery purposes...');
-      const next = [ ...available, available[0] ].reduce((found, cert) => {
-        if (found)
-          return (found === true) ? cert : found;
-        else
-          return ourcerts.preferred.certId == cert.certId;
-      }, false);
-      console.info(`Setting '${next.certId}' as new preferred certificate.`);
-      certstore.setPreferred(next.certId);
+      const next = certstore.rotateNext();
+      console.info(`Set '${next.certId}' as new preferred certificate.`);
     }
     console.error('Terminating for a clean process to retry in.');
     process.exit(1);
@@ -151,13 +151,58 @@ function connect() {
 }
 
 
+// -- Fleet Provisioning -------------------------------------------------
+
+async function attemptFleetProvisioning() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(options.fleetprov));
+    const fp = new FleetProvisioning(
+      cfg.claimstore, options.cacert, options.clientid, cfg.template);
+    const resp = await fp.attempt(cfg.parameters);
+    console.info(`Storing new certificate ${resp.certId}.`);
+    certstore.addCert(resp.certId, resp.certPem, resp.certKey);
+    if (cfg.outfile) {
+      const { thing, configuration } = resp;
+      console.info(`Storing thing configuration data in ${cfg.outfile}.`);
+      fs.writeFileSync(cfg.outfile, JSON.stringify({thing, configuration }));
+    }
+    else
+      console.info(`Discarded unwanted thing configuration data:`, resp);
+    if (cfg.notifycmd) {
+      console.info(`Notifying provisioning handler.`);
+      const opts = {
+        cwd: '/',
+        timeout: 10*1000,
+        killSignal: 'SIGKILL',
+      };
+      child_process.execSync(cfg.notifycmd, opts);
+    }
+    console.info(
+      `Fleet provisioning completed. Exiting for clean connection.`);
+    process.exit(0);
+  }
+  catch(e) {
+    console.error(`ERROR: Fleet provisioning failed:`, e);
+    console.error(
+      `Exiting in 30sec to enable retry with different certificate...`);
+    delayedExit(30);
+  }
+}
+
+
 // -- Initial startup ----------------------------------------------------
 
 if (ourcerts.preferred == null) {
-  console.error(`ERROR: No usable certificate found. Terminating in 10.`);
-  // If were to just exit we'd get relaunched right away and we'd just be
-  // burning CPU needlessly, as this may very well be an unrecoverable error.
-  setTimeout(() => process.exit(1), 10*1000);
+  if (options.fleetprov != null) {
+    console.info(`No certificate available, attempting Fleet Provisioning...`);
+    attemptFleetProvisioning();
+  }
+  else {
+    console.error(`ERROR: No usable certificate found. Terminating in 10.`);
+    // If were to just exit we'd get relaunched right away and we'd just be
+    // burning CPU needlessly, as this may very well be an unrecoverable error.
+    delayedExit(10);
+  }
 }
 else {
   console.info(`Using certificate ${ourcerts.preferred.certId}.`);

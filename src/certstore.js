@@ -19,6 +19,26 @@ CertStore.prototype.setPreferred = function(certId) {
 }
 
 
+CertStore.prototype.rotatePreferred = function() {
+  if (this._cache == null)
+    this.getCerts();
+  const available = this._cache.available;
+  const pref = this._cache.preferred
+  if (available.length > 1) {
+    const next = [ ...available, available[0] ].reduce((found, cert) => {
+      if (found)
+        return (found === true) ? cert : found;
+      else
+        return pref.certId == cert.certId;
+    }, false);
+    this.setPreferred(next.certId);
+    return next;
+  }
+  else
+    return pref;
+}
+
+
 // returns [ { certId:, certPath:, caPath:, host:, clientId: }, ... ]
 CertStore.prototype.getCerts = function() {
   const endpoint =
@@ -54,10 +74,11 @@ CertStore.prototype.getCerts = function() {
     this.setPreferred(dirs[0].certId);
     pref = dirs[0];
   }
-  return {
+  this._cache = {
     available: dirs,
     preferred: pref,
-  }
+  };
+  return this._cache;
 }
 
 
@@ -81,6 +102,7 @@ CertStore.prototype.addCert = function(certId, certificatePem, privateKey) {
     } catch(e) {}
   }
 }
+
 
 
 module.exports = CertStore;
