@@ -28,5 +28,5 @@ const everything = {
 
 assert.deepEqual(everything, sh.parse(sh.stringify(everything)));
 
-const unsupported_keep_numbers_as_strings = { a: ' 1' }
-assert.notDeepEqual(sh.parse(sh.stringify(unsupported_keep_numbers_as_strings)));
+const unsupported_keep_numbers_as_strings = { a: ' 1' };
+assert.notDeepEqual(unsupported_keep_numbers_as_strings, sh.parse(sh.stringify(unsupported_keep_numbers_as_strings)));
