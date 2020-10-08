@@ -13,7 +13,7 @@ const formats = {
 function loadService(dir, fname) {
   const obj = require(`${dir}/${fname}`);
   const expected = [ 'key', 'outfile', 'outformat', 'informat', 'notifycmd' ];
-  const optional = [ 'outkeys', 'notifykeys' ];
+  const optional = [ 'outkeys', 'notifykeys', 'initialnotify' ];
   for (const key of expected) {
     if (!obj.hasOwnProperty(key)) {
       console.warn(`Skipped service definition in ${dir}/${fname} due to missing key ${key}`);
@@ -87,11 +87,12 @@ function shouldNotify(picked, current, keylist) {
 
 function Service(svcdef) {
   Object.assign(this, svcdef);
+  this._initial = true;
 }
 
 
 Service.prototype.notify = function() {
-  console.info(`Notifying service '${this.key}' of changes.`);
+  console.info(`Notifying service '${this.key}'.`);
   const opts = {
     cwd: '/',
     timeout: 10*1000,
@@ -107,14 +108,16 @@ Service.prototype.notify = function() {
 
 
 Service.prototype.handleOut = function(obj) {
+  const initial = this._initial;
+  this._initial = false;
   const picked = pick(obj, this.outkeys);
   const current = loadCurrentOutfile(this);
   if (isDeepStrictEqual(picked, current)) {
     console.log(`No changes for service '${this.key}'.`);
-    return; // no changes, no notifications
+    if (!initial || !this.initialnotify)
+      return; // no changes, no notifications
   }
-
-  if (this.outfile != '/dev/null') {
+  else if (this.outfile != '/dev/null') {
     console.info(`Writing updated outfile for '${this.key}'.`);
     try {
       const tmpfile = `${this.outfile}.tmp`;
@@ -127,10 +130,8 @@ Service.prototype.handleOut = function(obj) {
     }
   }
 
-  if (!shouldNotify(picked, current, this.notifykeys))
-    return; // no changes in any of the keys the service want notification for
-
-  this.notify();
+  if (initial || shouldNotify(picked, current, this.notifykeys))
+    this.notify();
 }
 
 
