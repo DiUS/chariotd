@@ -44,11 +44,37 @@ function updateShadow(thing, dir, fname) {
 }
 
 
+function publishMessage(dir, fname) {
+  const obj = JSON.parse(fs.readFileSync(`${dir}/${fname}`));
+  for (const key of [ 'topic', 'payload' ])
+    if (obj[key] == null)
+      throw new Error(
+        `missing key '${obj[key]}' in '${fname}', unable to publish`);
+  console.log(`Publishing to ${obj.topic}...`);
+  return new Promise((resolve, reject) => {
+    comms.publish(obj.topic, JSON.stringify(obj.payload), { qos: obj.qos || 0 },
+      (err) => {
+        if (err)
+          reject(err);
+        else {
+          console.log(`Successfully published to ${obj.topic}.`);
+          resolve();
+        }
+      }
+    );
+  })
+}
+
+
 function delayedExit(sec) {
   setTimeout(() => process.exit(1), sec*1000);
 }
 
+
 // -- Setup phase --------------------------------------------------------
+
+var comms = null;
+var msgwatch = null;
 
 const certstore =
   new CertStore(options.certstore, options.cacert, options.clientid);
@@ -83,8 +109,8 @@ for (const arg of (options.updates || [])) {
     new DirWatch(dir, (dir, fname) => updateShadow(thing, dir, fname));
 }
 
-
 const shadows = {};
+
 
 // --- Comms handling ---------------------------------------------------
 var comms_attempts = 0;
@@ -219,7 +245,14 @@ if (ourcerts.preferred == null) {
 }
 else {
   console.info(`Using certificate ${ourcerts.preferred.certId}.`);
-  connect();
+  comms = connect();
+
+  // Late setup of messages watcher, as we need comms to be available
+  if (options.messages != null) {
+    console.info(`Establishing messages watcher on ${options.messages}`);
+    msgwatch = new DirWatch(options.messages, publishMessage);
+    msgwatch.rescan();
+  }
 }
 
 
