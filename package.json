@@ -10,7 +10,7 @@
     "test": "for t in test/*.js; do ./$t || exit 1; done"
   },
   "author": "jmattsson@dius.com.au",
-  "license": "GPL-3.0-or-later",
+  "license": "GPL-2.0",
   "dependencies": {
     "aws-iot-device-sdk": "2.2.6",
     "node-getopt": "0.3.2"
