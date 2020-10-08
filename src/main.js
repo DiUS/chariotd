@@ -153,9 +153,21 @@ function connect() {
 
 // -- Fleet Provisioning -------------------------------------------------
 
+function checkFleetProvisioningConfig(cfg) {
+  for (const key of [ 'claimstore', 'template', 'parameters' ])
+    if (cfg[key] == null)
+      throw new Error(`Missing key '${key}'`);
+  if (cfg.outfile != null && cfg.outformat == null)
+    throw new Error(`Key 'outformat' required when 'outfile' != null`);
+  if (typeof(cfg.parameters) != 'object' || Array.isArray(cfg.parameters))
+    throw new Error(`'parameters' must be an object`);
+}
+
+
 async function attemptFleetProvisioning() {
   try {
     const cfg = JSON.parse(fs.readFileSync(options.fleetprov));
+    checkFleetProvisioningConfig(cfg);
     const fp = new FleetProvisioning(
       cfg.claimstore, options.cacert, options.clientid, cfg.template);
     const resp = await fp.attempt(cfg.parameters);
@@ -164,7 +176,8 @@ async function attemptFleetProvisioning() {
     if (cfg.outfile) {
       const { thing, configuration } = resp;
       console.info(`Storing thing configuration data in ${cfg.outfile}.`);
-      fs.writeFileSync(cfg.outfile, JSON.stringify({thing, configuration }));
+      fs.writeFileSync(cfg.outfile,
+        services.stringifyOut(cfg.outformat, { thing, configuration }));
     }
     else
       console.info(`Discarded unwanted thing configuration data:`, resp);
@@ -184,7 +197,7 @@ async function attemptFleetProvisioning() {
   catch(e) {
     console.error(`ERROR: Fleet provisioning failed:`, e);
     console.error(
-      `Exiting in 30sec to enable retry with different certificate...`);
+      `Exiting in 30sec for retry (possibly with different cert)...`);
     delayedExit(30);
   }
 }

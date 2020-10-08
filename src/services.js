@@ -49,6 +49,11 @@ function parseIn(fmt, text) {
 }
 
 
+function stringifyOut(fmt, obj) {
+  return formats[fmt].stringify(obj);
+}
+
+
 function pick(obj, keylist) {
   if (keylist == null)
     return Object.assign({}, obj);
@@ -138,4 +143,5 @@ Service.prototype.handleDeltaOut = function(obj) {
 module.exports = {
   loadServicesDir,
   parseIn,
+  stringifyOut,
 }
