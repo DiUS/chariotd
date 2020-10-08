@@ -16,8 +16,8 @@ const cmdline = Getopt.create([
    'watch for shadow updates to THING in DIR' ],
  [ '', 'messages=DIR',
    'watch for message to publish to mqtt in DIR' ],
- // TODO: [ '', 'commands=DIR',
- //  'watch for command requests in DIR' ],
+ [ '', 'commands=DIR',
+   'watch for command requests in DIR' ],
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
 

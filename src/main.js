@@ -26,6 +26,12 @@ function splitArg(x) {
 }
 
 
+function refetchShadows() {
+  for (const key in shadows)
+    shadows[key].fetch();
+}
+
+
 function updateShadow(thing, dir, fname) {
   const svcname = fname.split('.')[0]; // support service.timestamp
   const svc = (svcs[thing] || {})[svcname];
@@ -63,6 +69,27 @@ function publishMessage(dir, fname) {
       }
     );
   })
+}
+
+
+function handleCommand(dir, fname) {
+  switch(fname) {
+    case 'refetch':
+      console.info(`Re-fetching shadows due to command request.`);
+      refetchShadows();
+      break;
+    case 'reprovision':
+      if (options.fleetprov != null) {
+        console.info(`Attempting re-provisioning due to command request.`);
+        attemptFleetProvisioning();
+      }
+      else
+        console.warn(`Ignoring impossible request to reprovision - no fleet provisioning details provided on startup.`);
+      break;
+    default:
+      console.warn(`Ignored unknown command '${fname}'.`);
+      break;
+  }
 }
 
 
@@ -110,6 +137,11 @@ for (const arg of (options.updates || [])) {
 }
 
 const shadows = {};
+
+const cmdwatch = (options.commands != null) ?
+  new DirWatch(options.commands, handleCommand) : null;
+console.info(
+  `${cmdwatch == null ? "No w" : "W"}atcher for command requests established${cmdwatch == null ? "." : " on "+options.commands}`);
 
 
 // --- Comms handling ---------------------------------------------------
@@ -195,7 +227,7 @@ async function attemptFleetProvisioning() {
     const cfg = JSON.parse(fs.readFileSync(options.fleetprov));
     checkFleetProvisioningConfig(cfg);
     const fp = new FleetProvisioning(
-      cfg.claimstore, options.cacert, options.clientid, cfg.template);
+      cfg.claimstore, options.cacert, `${options.clientid}-fp`, cfg.template);
     const resp = await fp.attempt(cfg.parameters);
     console.info(`Storing new certificate ${resp.certId}.`);
     certstore.addCert(resp.certId, resp.certPem, resp.certKey);
@@ -253,6 +285,9 @@ else {
     msgwatch = new DirWatch(options.messages, publishMessage);
     msgwatch.rescan();
   }
+
+  if (cmdwatch != null)
+    cmdwatch.rescan();
 }
 
 
@@ -260,8 +295,7 @@ else {
 
 process.on('SIGHUP', () => {
   console.info('Got SIGHUP, re-fetching shadow(s)...');
-  for (const key in shadows)
-    shadows[key].fetch();
+  refetchShadows();
 });
 
 
