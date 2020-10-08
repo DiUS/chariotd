@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const sh = require('../src/filefmt/shell.js');
+const json = require('../src/filefmt/json.js');
 const assert = require('assert').strict;
 
 const everything = {
@@ -26,9 +26,7 @@ const everything = {
   },
 };
 
-assert.deepEqual(everything, sh.parse(sh.stringify(everything)));
+assert.deepEqual(everything, json.parse(json.stringify(everything)));
 
-const unsupported_keep_numbers_as_strings = { a: ' 1' };
-assert.notDeepEqual(unsupported_keep_numbers_as_strings, sh.parse(sh.stringify(unsupported_keep_numbers_as_strings)));
 const ensure_no_nulls = { a: null };
-assert.notDeepEqual(ensure_no_nulls, sh.parse(sh.stringify(ensure_no_nulls)));
+assert.notDeepEqual(ensure_no_nulls, json.parse(json.stringify(ensure_no_nulls)));
