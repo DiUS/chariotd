@@ -20,6 +20,7 @@
     "node-getopt"
   ],
   "files": [
-    "src/*.js"
+    "src/*.js",
+    "src/filefmt/*.js"
   ]
 }
