@@ -58,7 +58,8 @@ function pick(obj, keylist) {
   if (keylist == null)
     return Object.assign({}, obj);
   return keylist.reduce((out, key) => {
-    out[key] = obj[key];
+    if (obj[key] !== undefined)
+      out[key] = obj[key];
     return out;
   }, {});
 }
