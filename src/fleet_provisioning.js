@@ -49,7 +49,7 @@ FleetProvisioning.prototype._onMessage = function(topic, payload) {
         console.error('ERROR: Fleet provisioning request rejected:', obj);
         break;
       case this._topics.prov_accepted:
-        console.log(`Claimed ${this._newcert.certificatedId} successfully.`);
+        console.log(`Claimed ${this._newcert.certificateId} successfully.`);
         this._response = {
           certId: this._newcert.certificateId,
           certPem: this._newcert.certificatePem,
