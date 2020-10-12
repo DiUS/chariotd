@@ -11,6 +11,7 @@ function Shadow(comms, thingName, svcs) {
   this._tokFetch = `FETCH:${thingName}`;
   this._tokUpdate = `UPDATE:${thingName}`;
   this._pending_updates = [];
+  this._ready = false;
 }
 
 
@@ -33,6 +34,8 @@ Shadow.prototype.update = function(obj) {
       default: return; // impossible
     }
   }
+  if (!this._ready)
+    return; // haven't done our initial fetch yet, so just buffer updates
   if (pending.length == 0)
     return; // surplus update request, nothing needs doing
   this._comms.update(this._thing, {
@@ -57,6 +60,7 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
     console.log(`Received shadow for '${this._thing}'.`);
     clearTimeout(this._fetchTimer); // may be null
     this._fetchTimer = null;
+    this._ready = true;
     const desired = resp.state.desired || {};
     const merged = shadowMerge(resp.state.reported || {}, desired);
     const upd = {};
@@ -68,13 +72,19 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
     }
     if (Object.keys(upd).length > 0)
       this.update({ reported: upd, desired: null });
+    else
+      this.update(); // kick off any pending update(s)
   }
   else if (resp.code == 404) {
     console.warn(`No shadow for '${this._thing}' yet, creating blank shadow.`);
     // Wipe any cached settings from a previous shadow
     for (const key in this._svcs)
       this._svcs[key].handleOut({});
-    this.update({});
+    // Bypass and buffered updates so we can get the shadow created first.
+    this._comms.update(this._thing, {
+      clientToken: this._tokUpdate,
+      state: { reported: {} }
+    });
   }
   else {
     if (this._fetchTimer != null)
@@ -95,6 +105,7 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
 Shadow.prototype.onUpdateStatus = function(stat, resp) {
   if (stat == 'accepted') {
     console.log(`Shadow for '${this._thing}' updated.`);
+    this._ready = true;
     this._pending_updates.shift();
     if (this._pending_updates.length > 0)
       this.update();
