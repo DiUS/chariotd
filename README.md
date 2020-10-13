@@ -2,7 +2,7 @@
 
 The AWS IoT Core provides handy services for provisioning IoT devices and managing their configuration settings via the Device Shadow concept. Interfacing with it from Linux userspace is not something that is provided out of the box. It is this gap that chariotd fills. Effectively it allows interaction with the IoT Core using the typical Unix primitives - files and process spawning. The design builds on the experience from several precursor implementations done for various projects, and aims to be the "best of breed" as a result.
 
-What about the name, you ask? This project is the __c__ ommon __h__ andling for __A__ WS co __r__ e __IoT__ __d__ aemon. Part acronym, part backronym, part search optimiser, part geekery.
+What about the name, you ask? This project is the **c**ommon **h**andling for **A**WS co**r**e **IoT** **d**aemon. Part acronym, part backronym, part search optimiser, part geekery.
 
 
 ## Quick examples
@@ -24,7 +24,7 @@ Without delving into the details, here are some examples how the different facet
 ### Hook a device shadow key to a service
 
   1. Write the service definition to /var/chariotd/svcs/foo.js:
-```
+     ```
      module.exports = {
        key: 'foo',
        outfile: '/config/foo.rc',
@@ -32,23 +32,23 @@ Without delving into the details, here are some examples how the different facet
        informat: 'SHELL',
        notifycmd: 'sv restart foo',
      }
-```
+     ```
   1. Launch chariotd with `--services` to monitor a device shadow for setting changes: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --services=MyThing:/var/chariotd/svcs`
   1. Whenever the contents of the "foo" key in the device shadow for "MyThing" doesn't match the contents of "/config/foo.rc", that file gets updated and the "foo" service restarted.
 
 ### Using fleet provisioning
 
   1. Write the fleet provisioning config to /var/chariotd/fp.json:
-```
-    {
-      "claimstore": "/config/factory/cert",
-      "template": "my-provisioning-template",
-      "parameters": {
-        "SerialNumber": "1234"
-      }
-    }
-```
-  1. Launch chariotd with `--fleetprov` to enable initial device provisioning via AWS fleet provisioning: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --fleetprov=/var/chariotd/fp.json
+     ```
+     {
+       "claimstore": "/config/factory/cert",
+       "template": "my-provisioning-template",
+       "parameters": {
+         "SerialNumber": "1234"
+       }
+     }
+     ```
+  1. Launch chariotd with `--fleetprov` to enable initial device provisioning via AWS fleet provisioning: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --fleetprov=/var/chariotd/fp.json`
   1. If there is no device certificate available in the certstore, a fleet provisioning attempt will be started, and if successful the new certificate is saved to the certstore.
 
 
@@ -85,7 +85,7 @@ When chariotd exists due to communications failure and there are multiple certif
 
 In order to easily handle certificate rotation chariotd is designed around the concept of certificate stores rather than single certificate. A certificate store is simply a base directory containing an `endpoint.txt` file listing the AWS IoT endpoint the certificates apply to, and a number of sub directories with each containing a certificate and associated private key.
 
-E.g.:
+Example:
 ```
 /path/to/certstore/
   - endpoint.txt
@@ -116,6 +116,29 @@ In the case where there are already files present in the `new/` directory when c
 ## Service definitions
 
 The approach chariotd takes is to treat each top-level key in the device shadow as belonging to a separate service. For example, there may be a key named "firmware" which holds all the settings for firmware selection and upgrading, another key named "network" which provides manual network settings, yet another key called "yourapp" which contains the settings for your app, etc. This provides clean separation of concerns, and when settings change only the service whose setting(s) were changed needs to be notified.
+
+Example shadow document:
+```
+{
+  "reported": {
+    "firmware": {
+      "running": "2.0.1",
+      "wanted": "2.0.1",
+      "url": "https://www.example.com/firmware/cool-device-2.0.1.bin"
+    },
+    "network": {
+      "dns": [ "1.1.1.1", "8.8.8.8" ]
+    },
+    "yourapp": {
+      "foo": "bar",
+      "frob": {
+        "extra": true,
+        "baz": "nope"
+      }
+    }
+  }
+}
+```
 
 A service definition is written as a [Common JS module](https://nodejs.org/docs/latest/api/modules.html). While the typical service definition would have easily be handled by a JSON format, experience has shown that it is better to err on the side of flexibility in this area.
 
@@ -207,6 +230,7 @@ Note that when using the SHELL format, you are limited in what you can name your
 ## Shadow updates
 
 Option to enable: `--updates=THING:/path/to/dir/to/watch`
+
 Directory structure: [action directory](#action-directories)
 
 Enables the updating sections of a things's device shadow by putting files into the watched directory.
@@ -238,6 +262,7 @@ While it is possible to include parameters to the command in the chariotd comman
 ## Message publishing
 
 Option to enable: `--messages=/path/to/dir/to/watch`
+
 Directory structure: [action directory](#action-directories)
 
 Allows userspace processes to publish messages to MQTT topics by way of writing files to the watched directory.
@@ -266,6 +291,7 @@ The message file is in [JSON](https://www.json.org) and contains two mandatory t
 ## Command requests
 
 Option to enable: `--commands=/path/to/dir/to/watch`
+
 Directory structure: [action directory](#action-directories)
 
 When used, allows command requests to be sent to the running chariotd process. The filename is the name of the command. Command arguments, if any, are contained within the file.
