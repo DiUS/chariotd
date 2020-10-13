@@ -2,7 +2,7 @@
 
 The AWS IoT Core provides handy services for provisioning IoT devices and managing their configuration settings via the Device Shadow concept. Interfacing with it from Linux userspace is not something that is provided out of the box. It is this gap that chariotd fills. Effectively it allows interaction with the IoT Core using the typical Unix primitives - files and process spawning. The design builds on the experience from several precursor implementations done for various projects, and aims to be the "best of breed" as a result.
 
-What about the name, you ask? This project is the __c__ommon __h__andling for __A__WS co__r__e __IoT__ __d__aemon. Part acronym, part backronym, part search optimiser, part geekery.
+What about the name, you ask? This project is the __c__ ommon __h__ andling for __A__ WS co __r__ e __IoT__ __d__ aemon. Part acronym, part backronym, part search optimiser, part geekery.
 
 
 ## Quick examples
@@ -12,7 +12,7 @@ Without delving into the details, here are some examples how the different facet
 ### Posting to MQTT topics
 
   1. Launch chariotd with `--messages` to listen for messages to upload: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --messages=/var/chariotd/mqtt`
-  1. Prepare a new message to publish: `echo '{ "topic": "mytopic/foo", "payload": { "key": "value", "key2": 2 } }' > /var/chariotd/mqtt/tmp/foomsg
+  1. Prepare a new message to publish: `echo '{ "topic": "mytopic/foo", "payload": { "key": "value", "key2": 2 } }' > /var/chariotd/mqtt/tmp/foomsg`
   1. Publish it: `mv /var/chariotd/mqtt/tmp/foomsg /var/chariotd/mqtt/new/`
 
 ### Updating a device shadow
@@ -24,7 +24,7 @@ Without delving into the details, here are some examples how the different facet
 ### Hook a device shadow key to a service
 
   1. Write the service definition to /var/chariotd/svcs/foo.js:
-    ```
+```
      module.exports = {
        key: 'foo',
        outfile: '/config/foo.rc',
@@ -32,14 +32,14 @@ Without delving into the details, here are some examples how the different facet
        informat: 'SHELL',
        notifycmd: 'sv restart foo',
      }
-     ```
+```
   1. Launch chariotd with `--services` to monitor a device shadow for setting changes: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --services=MyThing:/var/chariotd/svcs`
   1. Whenever the contents of the "foo" key in the device shadow for "MyThing" doesn't match the contents of "/config/foo.rc", that file gets updated and the "foo" service restarted.
 
 ### Using fleet provisioning
 
   1. Write the fleet provisioning config to /var/chariotd/fp.json:
-    ```
+```
     {
       "claimstore": "/config/factory/cert",
       "template": "my-provisioning-template",
@@ -47,7 +47,7 @@ Without delving into the details, here are some examples how the different facet
         "SerialNumber": "1234"
       }
     }
-    ```
+```
   1. Launch chariotd with `--fleetprov` to enable initial device provisioning via AWS fleet provisioning: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --fleetprov=/var/chariotd/fp.json
   1. If there is no device certificate available in the certstore, a fleet provisioning attempt will be started, and if successful the new certificate is saved to the certstore.
 
@@ -178,7 +178,8 @@ The SHELL output format implements a subset of shell variable assignment. Depend
       yy: 42,
     }
   },
-}```
+}
+```
 becomes:
 ```
 a='1'
