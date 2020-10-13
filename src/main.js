@@ -110,11 +110,13 @@ const ourcerts = certstore.getCerts();
 console.info(`Found ${ourcerts.available.length} certificates.`);
 
 // Work out which things we need to register
-const things = [...[ 'services', 'shadow' ].reduce((out, opt) => {
-  for (const arg of (options[opt] || []))
-    out.add(splitArg(arg)[0]);
-  return out;
-}, new Set()).keys()];
+const things = [...[ 'services', 'shadow', 'defaultshadow' ].reduce(
+  (out, opt) => {
+    for (const arg of (options[opt] || []))
+      out.add(splitArg(arg)[0]);
+    return out;
+  }, new Set()).keys()
+];
 console.info(`Total of ${things.length} things to register.`);
 
 // Load the service definitions and keep them by thing name
@@ -134,6 +136,14 @@ for (const arg of (options.updates || [])) {
   console.info(`Establishing update watcher for '${thing}' on ${dir}`);
   dirwatches[thing] =
     new DirWatch(dir, (dir, fname) => updateShadow(thing, dir, fname));
+}
+
+// Note any initial shadow content generation commands
+const default_shadow_cmds = {};
+for (const arg of (options.defaultshadow || [])) {
+  const [ thing, cmd ] = splitArg(arg);
+  default_shadow_cmds[thing] = cmd;
+  console.info(`Default shadow content generator available for ${thing}.`);
 }
 
 const shadows = {};
@@ -173,12 +183,14 @@ function connect() {
     comms_attempts = 0;
     for (const thing of things) {
       const withServices = svcs[thing] != null;
-      shadows[thing] = new Shadow(comms, thing, svcs[thing]);
+      shadows[thing] = new Shadow(
+        comms, thing, svcs[thing], default_shadow_cmds[thing]);
       console.log(`Registering thing '${thing}'.`);
       comms.register(
         thing,
         { ignoreDeltas: !withServices },
         () => {
+          console.log(`Successfully registered thing '${thing}'.`);
           if (dirwatches[thing] != null)
             dirwatches[thing].rescan(); // pick up any pending changes
           shadows[thing].fetch();

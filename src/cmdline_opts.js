@@ -14,6 +14,8 @@ const cmdline = Getopt.create([
    'use service definitions in DIR for THING' ],
  [ '', 'updates=THING:DIR+',
    'watch for shadow updates to THING in DIR' ],
+ [ '', 'defaultshadow=THING:COMMAND+',
+   'use the output from COMMAND to seed the shadow for THING, if not already present' ],
  [ '', 'messages=DIR',
    'watch for message to publish to mqtt in DIR' ],
  [ '', 'commands=DIR',

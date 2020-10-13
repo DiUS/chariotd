@@ -1,13 +1,33 @@
 /* Copyright(C) 2019-2020 DiUS Computing Pty Ltd */
 'use strict';
 
+const child_process = require('child_process');
 const shadowMerge = require('./shadow_merge.js');
 
 
-function Shadow(comms, thingName, svcs) {
+function sourceInitialShadowContent(thing, cmd) {
+  try {
+    const cmd_opts = {
+      input: thing, // allow it to read the thing name from stdin
+      encoding: 'utf8',
+      timeout: 5*1000,
+      killSignal: 'SIGKILL',
+    };
+    console.log(`Sourcing initial shadow content for '${thing}' via '${cmd}'...`);
+    return JSON.parse(child_process.execSync(cmd, cmd_opts));
+  }
+  catch(e) {
+    console.warn(`Failed to source initial shadow content via '${cmd}': ${e}`);
+    return {}; // default to blank
+  }
+}
+
+
+function Shadow(comms, thingName, svcs, default_cmd) {
   this._comms = comms;
   this._thing = thingName;
   this._svcs = svcs;
+  this._default_cmd = default_cmd;
   this._tokFetch = `FETCH:${thingName}`;
   this._tokUpdate = `UPDATE:${thingName}`;
   this._pending_updates = [];
@@ -76,14 +96,17 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
       this.update(); // kick off any pending update(s)
   }
   else if (resp.code == 404) {
-    console.warn(`No shadow for '${this._thing}' yet, creating blank shadow.`);
+    console.warn(`No shadow for '${this._thing}' yet.`);
+    const initial = this._default_cmd != null ?
+      sourceInitialShadowContent(this._thing, this._default_cmd)  : {};
+    console.warn(`Creating shadow with ${Object.keys(initial).length} top-level keys.`);
     // Wipe any cached settings from a previous shadow
     for (const key in this._svcs)
-      this._svcs[key].handleOut({});
+      this._svcs[key].handleOut(initial[key] || {});
     // Bypass and buffered updates so we can get the shadow created first.
     this._comms.update(this._thing, {
       clientToken: this._tokUpdate,
-      state: { reported: {} }
+      state: { reported: initial }
     });
   }
   else {
