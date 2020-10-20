@@ -67,6 +67,7 @@ function publishMessage(dir, fname) {
           reject(err);
         else {
           console.log(`Successfully published to ${obj.topic}.`);
+          comms_attempts = 0;
           resolve();
         }
       }
@@ -178,33 +179,48 @@ function checkCommsAttempts() {
 function connect() {
   console.info('Connecting to AWS IoT Core...');
 
+  const keepalive = options.keepalive != null ? +options.keepalive : 1200;
   const comms = awsiot.thingShadow(
-    Object.assign({ keepalive: 1200 }, ourcerts.preferred));
+    Object.assign({ keepalive }, ourcerts.preferred));
+  const registered = {};
   ++comms_attempts;
   comms.on('connect', () => {
     console.info('Connected.');
-    comms_attempts = 0;
     for (const thing of things) {
       const withServices = svcs[thing] != null;
       shadows[thing] = new Shadow(
         comms, thing, svcs[thing], default_shadow_cmds[thing]);
-      console.log(`Registering thing '${thing}'.`);
-      comms.register(
-        thing,
-        { ignoreDeltas: !withServices },
-        () => {
-          console.log(`Successfully registered thing '${thing}'.`);
-          if (dirwatches[thing] != null)
-            dirwatches[thing].rescan(); // pick up any pending changes
-          shadows[thing].fetch();
-        }
-      );
+      function go() {
+        if (dirwatches[thing] != null)
+          dirwatches[thing].rescan(); // pick up any pending changes
+        shadows[thing].fetch();
+      }
+      // The callback to comms.register() doesn't get called if we've connected
+      // once before, so only register if we haven't or we get stuck waiting.
+      if (registered[thing] == null) {
+        console.log(`Registering thing '${thing}'.`);
+        comms.register(
+          thing,
+          { ignoreDeltas: !withServices },
+          () => {
+            console.log(`Successfully registered thing '${thing}'.`);
+            registered[thing] = true;
+            go();
+          }
+        );
+      }
+      else // thing is already registered, we may do updates & fetches
+        go();
     }
   });
-  comms.on('status', (thing, stat, token, resp) =>
-    shadows[thing].onStatus(stat, token, resp));
-  comms.on('delta', (thing, resp) =>
-    shadows[thing].onDelta(resp));
+  comms.on('status', (thing, stat, token, resp) => {
+    comms_attempts = 0;
+    shadows[thing].onStatus(stat, token, resp);
+  });
+  comms.on('delta', (thing, resp) => {
+    comms_attempts = 0;
+    shadows[thing].onDelta(resp);
+  });
   comms.on('timeout', (thing, token) => {
     shadows[thing].onTimeout(token);
     ++comms_attempts;

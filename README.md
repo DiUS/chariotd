@@ -68,6 +68,7 @@ Past this the features are pick-and-choose.
   - `--defaultshadow` - Enables seeding of a thing's device shadow if it does not yet exist. Refer to [Default shadow creation](#default-shadow-creation) for specifics on using this feature.
   - `--messages` - Instructs chariotd to watch for MQTT publish requests. The specifics are available in the [Message publishing](#message-publishing) section.
   - `--commands` - Makes chariotd listen for command requests. Available commands which may be sent are listed in the [Command requests](#command-requests) section.
+  - `--keepalive` - This can be used to override the keepalive interval, which by default is set to 1200. Devices communicating through a [NAT](https://en.wikipedia.org/wiki/Network_address_translation) device may need to use a lower keepalive interval to avoid the session state expiring in the NAT device.
 
 
 ## Restarting chariotd

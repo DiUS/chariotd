@@ -20,6 +20,8 @@ const cmdline = Getopt.create([
    'watch for message to publish to mqtt in DIR' ],
  [ '', 'commands=DIR',
    'watch for command requests in DIR' ],
+ [ '', 'keepalive=SECONDS',
+   'send keep-alive ping every SECONDS (default 1200)' ],
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
 
