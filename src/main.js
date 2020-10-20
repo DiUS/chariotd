@@ -58,7 +58,10 @@ function publishMessage(dir, fname) {
         `missing key '${obj[key]}' in '${fname}', unable to publish`);
   console.log(`Publishing to ${obj.topic}...`);
   return new Promise((resolve, reject) => {
-    comms.publish(obj.topic, JSON.stringify(obj.payload), { qos: obj.qos || 0 },
+    comms.publish(
+      obj.topic,
+      JSON.stringify(obj.payload),
+      { qos: obj.qos != null ? obj.qos : 1 },
       (err) => {
         if (err)
           reject(err);

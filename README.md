@@ -274,12 +274,12 @@ The file name has no special meaning. To avoid name conflicts it is recommended 
 
 ### Message file content
 
-The message file is in [JSON](https://www.json.org) and contains two mandatory top-level keys - `topic` and `payload`. Optionally the key `qos` may be used to indicate the MQTT quality-of-service level to request.
+The message file is in [JSON](https://www.json.org) and contains two mandatory top-level keys - `topic` and `payload`. Optionally the key `qos` may be used to indicate the MQTT quality-of-service level to request. The default QoS is 1, for "at least once" delivery.
 
 ```
 {
   "topic": "my/topic/of/something",
-  "qos": 1,
+  "qos": 0,
   "payload": {
     "key": "my data",
     "more": true
