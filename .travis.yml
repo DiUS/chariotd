@@ -1,0 +1,23 @@
+# yamllint disable-line rule:document-start
+language: node_js
+node_js:
+  - lts/*
+install:
+  - npm install
+script:
+  - npm test
+before_deploy:
+  - npm version --no-git-tag-version --force "$TRAVIS_TAG"
+  - npm pack
+deploy:
+  provider: releases
+  edge: true    # use dpl v2
+  token:
+    # yamllint disable-line rule:line-length
+    secure: CJUj+vP5ENQvTkcCMd68sIk1jOWWq260EvSGhpSHZZ2aLCeyMLi0/+s0OnDnVtB01vePEk9riCCx6Zt0CsT6Xw/xUDiFzz2lqIB9DOI/skwn+nCjKWk2AyQrkPd2h+6GKb5EVwOD9l3uicb7x/v1nUWaGh/yDNulQUju8yNUPkIvKvAvaLkK2wE6SlR+wL2Zqe2uVdCOJoJXRUkmyxj54b5QidjGn6hAjraxE9dsN1jStYhFUqDqNAyPIwbyqqZxdlezKZvhK6DW9CgYZEJ6CnpIDwO047dNiim552cPW4J01W3XPJYbggDiljJ9gYUr89oBLoFfvN3Jugo5/BWoHKShY4O2PPVIpItcoUdjIxR1oEdNH46Z/yhjXgttI0wvh4G7SbHq1oJogsWiPgGPupDehrMSugX8HZIra3Ejv4Vcrbw5amRWTLXQd+Fuq5jFHpX89goSy+s4yXFhvMUX8JyM+AmdW6b4taDfmXREg7nnWMaN9o6wIRYo12rH6N/1ysKUgGX0a9Z1GLExFxvPHEzFb3iY6x3OzRhQF+hrQM6IAMtk032AiXSNzMfBpOOQcm7B6WvRQukt3f5/Gxm8wGchJYEbFIIZ6vdhZgd/6zEgKK6L5yjoe+C6/FAen1ClTdwix313cFiVrU767IaG75QSA85VUx0a3KmPz+ZZMQ8=
+  file: chariotd-*.tgz
+  # yamllint disable-line rule:truthy
+  on:
+    all_branches: true
+    tags: true
+    repo: DiUS/chariotd
