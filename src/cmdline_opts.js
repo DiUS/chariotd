@@ -20,8 +20,17 @@ const cmdline = Getopt.create([
    'watch for message to publish to mqtt in DIR' ],
  [ '', 'commands=DIR',
    'watch for command requests in DIR' ],
+
+ [ '', 'tunnelmappings=THING:PORTMAPPINGS+',
+   'accept tunnel requests for THING, using PORTMAPPINGS e.g. SSH=22,HTTP=80' ],
+ [ '', 'tunnelproxy=PATH',
+   'use PATH as tunnel proxy binary (default "localproxy")' ],
+ [ '', 'tunnelcadir=DIR',
+   'tell tunnel proxy to look for OpenSSL-compatibly named CA cert in DIR' ],
+
  [ '', 'keepalive=SECONDS',
    'send keep-alive ping every SECONDS (default 1200)' ],
+
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
 
