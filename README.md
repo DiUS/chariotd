@@ -62,6 +62,9 @@ Without delving into the details, here are some examples how the different facet
   1. Check that the tunnel session shows both endpoints connected, e.g. using the AWS Console or the CLI (`aws iotsecuretunneling describe-tunnel --tunnel-id=...`).
   1. Connect through the proxy, e.g. `ssh -p 2222 user@localhost`.
 
+## Additional reading
+
+There is also a [blog post](https://dius.com.au/2020/11/12/using-aws-iot-core-on-embedded-linux/) available, discussing how to integrate chariotd into an embedded Linux IoT device project.
 
 ## Running chariotd
 
