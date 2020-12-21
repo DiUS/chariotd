@@ -1,6 +1,6 @@
 {
   "name": "chariotd",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Daemon for bringing AWS IoT Core services into Linux user-space.",
   "main": "src/main.js",
   "bin": {

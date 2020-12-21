@@ -9,6 +9,7 @@ const CertStore = require('./certstore.js');
 const Shadow = require('./shadow.js');
 const DirWatch = require('./dirwatch.js');
 const FleetProvisioning = require('./fleet_provisioning.js');
+const { applyHorribleReservedTopicWorkaround, SecureTunnel } = require('./secure_tunnel.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
 const shadowMerge = require('./shadow_merge.js');
@@ -90,6 +91,24 @@ function handleCommand(dir, fname) {
       else
         console.warn(`Ignoring impossible request to reprovision - no fleet provisioning details provided on startup.`);
       break;
+    case 'open-tunnel': {
+      const obj = JSON.parse(fs.readFileSync(`${dir}/${fname}`));
+      if (tunnels[obj.thing] != null)
+        tunnels[obj.thing].launch(obj.token, obj.services, obj.region);
+      else
+        console.warn(
+          `Ignored open-tunnel request for '${obj.thing}': not configured`);
+      break;
+    }
+    case 'close-tunnel': {
+      const obj = JSON.parse(fs.readFileSync(`${dir}/${fname}`));
+      if (tunnels[obj.thing] != null)
+        tunnels[obj.thing].terminate();
+        else
+          console.warn(
+            `Ignored close-tunnel request for '${obj.thing}': not configured`);
+      break;
+    }
     default:
       console.warn(`Ignored unknown command '${fname}'.`);
       break;
@@ -149,6 +168,22 @@ for (const arg of (options.defaultshadow || [])) {
   default_shadow_cmds[thing] = cmd;
   console.info(`Default shadow content generator available for ${thing}.`);
 }
+
+// Note tunnel configs, if any
+const tunnels = {};
+const tunnel_topics = {};
+for (const arg of (options.tunnelmappings || [])) {
+  const [ thing, list ] = splitArg(arg);
+  const tunnel = new SecureTunnel(
+    thing, list, options.tunnelproxy, options.tunnelcadir);
+  tunnels[thing] = tunnel;
+  tunnel_topics[tunnel.topic()] = tunnel;
+  console.info(`Secure tunnel config loaded for ${thing}.`);
+}
+// TODO: Remove this workaround as soon as the aws-iot-device-sdk is fixed!
+if (Object.keys(tunnels).length > 0)
+  applyHorribleReservedTopicWorkaround();
+
 
 const shadows = {};
 
@@ -212,6 +247,13 @@ function connect() {
       else // thing is already registered, we may do updates & fetches
         go();
     }
+    for (const thing in tunnels) {
+      comms.subscribe(tunnels[thing].topic(), err => {
+        if (err != null)
+          console.warn(
+            `Failed to subscribe to tunnel topic for '${thing}': ${err}`);
+      });
+    }
   });
   comms.on('status', (thing, stat, token, resp) => {
     comms_attempts = 0;
@@ -225,6 +267,11 @@ function connect() {
     shadows[thing].onTimeout(token);
     ++comms_attempts;
     checkCommsAttempts();
+  });
+  comms.on('message', (topic, payload) => {
+    const tunnel = tunnel_topics[topic];
+    if (tunnel != null)
+      tunnel.handleMessage(payload);
   });
   comms.on('error', err => {
     console.error('AWS IoT Core connection reported error:', err);

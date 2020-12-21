@@ -46,7 +46,6 @@ function prune(dir, max) {
 
 function DirWatch(basedir, cb, opts) {
   this._basedir = basedir;
-  this._cb = cb;
   this._max_failed = ((opts || {}).max_failed != null) ?
     opts.max_failed : MAX_PRUNE_KEEP_DEFAULT;
 
