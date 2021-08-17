@@ -212,8 +212,10 @@ function connect() {
   console.info('Connecting to AWS IoT Core...');
 
   const keepalive = options.keepalive != null ? +options.keepalive : 1200;
+  const alpn = (ourcerts.preferred.port == 443) ?
+    { ALPNProtocols: [ 'x-amzn-mqtt-ca' ] } : undefined;
   const comms = awsiot.thingShadow(
-    Object.assign({ keepalive }, ourcerts.preferred));
+    Object.assign({ keepalive }, ourcerts.preferred, alpn));
   const registered = {};
   ++comms_attempts;
   comms.on('connect', () => {

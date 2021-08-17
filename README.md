@@ -103,6 +103,14 @@ When chariotd exists due to communications failure and there are multiple certif
 
 In order to easily handle certificate rotation chariotd is designed around the concept of certificate stores rather than single certificate. A certificate store is simply a base directory containing an `endpoint.txt` file listing the AWS IoT endpoint the certificates apply to, and a number of sub directories with each containing a certificate and associated private key.
 
+The `endpoint.txt` may contain either just the hostname of the IoT endpoint,
+or hostname and port number in the form of `hostname:port`. The latter can
+be used to switch from the standard MQTTS port (8883) to the HTTPS port (443).
+This can be necessary when located behind a restrictive firewall which does
+not permit outbound MQTTS traffic, but does allow HTTPS. Internally, the
+ALPN TLS option is automatically set to `x-amzn-mqtt-ca` whenever port
+443 is specified.
+
 Example:
 ```
 /path/to/certstore/

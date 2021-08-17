@@ -41,8 +41,10 @@ CertStore.prototype.rotatePreferred = function() {
 
 // returns [ { certId:, certPath:, caPath:, host:, clientId: }, ... ]
 CertStore.prototype.getCerts = function() {
-  const endpoint =
+  const endpoint_raw =
     fs.readFileSync(`${this._basedir}/endpoint.txt`, utf8).trim();
+  const endpoint = (endpoint_raw.indexOf(':') != -1) ?
+    endpoint_raw.split(':') : [ endpoint_raw, null ];
   // Get ordered list of subdirs, most recent first
   const dirs = fs.readdirSync(this._basedir, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
@@ -58,7 +60,8 @@ CertStore.prototype.getCerts = function() {
      certId:   x.name,
      certPath: `${this._basedir}/${x.name}/${x.name}-certificate.pem.crt`,
      keyPath:  `${this._basedir}/${x.name}/${x.name}-private.pem.key`,
-     host:     endpoint,
+     host:     endpoint[0],
+     port:     endpoint[1],
      caPath:   this._caPath,
      clientId: this._clientId,
    }));
