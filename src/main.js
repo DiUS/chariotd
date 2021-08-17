@@ -9,7 +9,7 @@ const CertStore = require('./certstore.js');
 const Shadow = require('./shadow.js');
 const DirWatch = require('./dirwatch.js');
 const FleetProvisioning = require('./fleet_provisioning.js');
-const { applyHorribleReservedTopicWorkaround, SecureTunnel } = require('./secure_tunnel.js');
+const { SecureTunnel } = require('./secure_tunnel.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
 const shadowMerge = require('./shadow_merge.js');
@@ -180,9 +180,6 @@ for (const arg of (options.tunnelmappings || [])) {
   tunnel_topics[tunnel.topic()] = tunnel;
   console.info(`Secure tunnel config loaded for ${thing}.`);
 }
-// TODO: Remove this workaround as soon as the aws-iot-device-sdk is fixed!
-if (Object.keys(tunnels).length > 0)
-  applyHorribleReservedTopicWorkaround();
 
 
 const shadows = {};

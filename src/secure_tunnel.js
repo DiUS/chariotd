@@ -104,19 +104,6 @@ SecureTunnel.prototype.terminate = function() {
 }
 
 
-function applyHorribleReservedTopicWorkaround() {
-  const substring = String.prototype.substring;
-  String.prototype.substring = function(x, y) {
-    var res = substring.call(this, x, y);
-    if (x == 0 && y == 12 && res == '$aws/things/') {
-      res = 'OneUglyHack!';
-    }
-    return res;
-  }
-}
-
-
 module.exports = {
   SecureTunnel,
-  applyHorribleReservedTopicWorkaround,
 };
