@@ -7,7 +7,7 @@
     "chariotd": "src/main.js"
   },
   "scripts": {
-    "test": "for t in test/*.js; do ./$t || exit 1; done"
+    "test": "for t in test/*.js; do echo Running test: $t; ./$t || exit 1; done"
   },
   "author": "jmattsson@dius.com.au",
   "license": "GPL-2.0",

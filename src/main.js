@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Copyright(C) 2019-2020 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
 'use strict';
 
 const awsiot = require('aws-iot-device-sdk');
@@ -12,7 +12,6 @@ const FleetProvisioning = require('./fleet_provisioning.js');
 const { SecureTunnel } = require('./secure_tunnel.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
-const shadowMerge = require('./shadow_merge.js');
 
 
 // --- Helper functions --------------------------------------------------
@@ -40,11 +39,13 @@ function updateShadow(thing, dir, fname) {
   if (shadows[thing] != null) {
     console.log(
       `Applying shadow update to '${thing}' for service '${svcname}'.`);
-    const text = fs.readFileSync(`${dir}/${fname}`, { encoding: 'utf8' });
-    const upd = services.parseIn(fmt, text);
-    shadows[thing].update(shadowMerge({}, { reported: { [svcname]: upd }}));
-    if (svc != null)
-      svc.handleDeltaOut(upd);
+    try {
+      const text = fs.readFileSync(`${dir}/${fname}`, { encoding: 'utf8' });
+      shadows[thing].onLocalDelta(svcname, services.parseIn(fmt, text);
+    }
+    catch(e) {
+      console.warn(`Error applying shadow update: ${e}`);
+    }
   }
   else
     console.log(`No connection available for '${thing}' yet, update to '${svcname}' delayed.`);

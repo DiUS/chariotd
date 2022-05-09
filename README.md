@@ -170,14 +170,19 @@ A service definition is written as a [Common JS module](https://nodejs.org/docs/
 
 The service definition is expected to export an object with _at least_ these keys:
   - `key` - The top-level key in the device shadow this service uses.
-  - `outfile` - Full path to the file where this service's configuration will be written.
-  - `outformat` - Format of the "outfile". See [Service outfile formats](#service-outfile-formats) for available formats.
+  - `outfile`\* - Full path to the file where this service's configuration will be written.
+  - `outformat`\* - Format of the "outfile". See [Service outfile formats](#service-outfile-formats) for available formats.
   - `informat` - Format used for shadow updates; same options as for "outformat". It does NOT have to be the same as "outformat".
   - `notifycmd` - The command to issue whenever the "outfile" has been updated.
 
 Additionally the following keys may be included:
   - `outkeys` - An array of subkey names. Limits what will be written to "outfile" to only those subkeys. This is useful for services which report frequently updating values in the shadow, but has no interest in reading those values back in. As the "notifycmd" is only invoked when the "outfile" has changed, this field also has the effect of limiting when the service gets notified.
   - `notifykeys` - An array of subkey names. Only invokes the "notifycmd" if a subkey named in this list has changed its value. Similar to "outkeys" but without limiting the information saved into "outfile".
+  - `initialnotify` - A boolean flag which if set triggers a notification of the service when the shadow is initially fetched. Keep in mind that this does _not_ equate to notify-on-system-startup, as the chariotd service may be restarted at times.
+  - `validate` - A function to validate any configuration changes before they are accepted. This can be used to prevent semantically invalid configurations. The default function is effectively `cfg => cfg`, meaning it accepts any parsable configuration object. The passed configuration is the _full_ configuration with any delta pre-applied. To completely reject a configuration update, throw an `Error`, in which case that will be logged and the update discarded. The outfile will not be updated, nor will the notify command be invoked. The function may also perform a "fix-up" of the configuration, for example clamping values to be within an appropriate range. Said fixup may be done either directly in the provided configuration object or the entire object may be replaced. Whatever is returned from the `validate()` is used as the new configuration for the service. If this differs from the old configuration, the usual change processing and notification will take place. Note that returning `null` (or `undefined`) from this function will lead to the service's section being removed from the shadow, so make sure you don't do that accidentally.
+  - `ephemeraldata` - A boolean flag which if set treats any updates for this service as ephemeral and does not persist it. The `validate()` function will still be called, but `outfile` will never be written. This flag is intended for special-case services where updates act as one-short commands, such as a `reboot` service.
+
+\*) If `ephemeraldata` is flagged, neither `outfile` nor `outformat` needs to be present.
 
 
 Example:

@@ -1,8 +1,9 @@
-/* Copyright(C) 2019-2020 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
 'use strict';
 
 const child_process = require('child_process');
 const shadowMerge = require('./shadow_merge.js');
+const shadowDiff = require('./shadow_diff.js');
 
 
 function sourceInitialShadowContent(thing, cmd) {
@@ -19,6 +20,45 @@ function sourceInitialShadowContent(thing, cmd) {
   catch(e) {
     console.warn(`Failed to source initial shadow content via '${cmd}': ${e}`);
     return {}; // default to blank
+  }
+}
+
+
+function validateServiceCfg(svc, cfg) {
+  if (svc == null) {
+    return {
+      valid: false,
+      cfg: null,
+    }
+  }
+  // Avoid confusion between undefined/null
+  if (cfg === undefined)
+    cfg = null;
+
+  let ok = true;
+  try { cfg = svc.validate(cfg); }
+  catch(e)
+  {
+    console.warn(`Validation of ${svc.key} failed: ${e}`);
+    ok = false;
+  }
+
+  return {
+    ok: ok,
+    cfg: cfg,
+  }
+}
+
+
+function processServiceCfg(svc, cfgDelta, onCfgDiff) {
+  const cfgOld = svc.getCurrentCfg();
+  const merged = shadowMerge(svc.getCurrentCfg(), cfgDelta);
+  const validated = validateServiceCfg(svc, merged);
+  if (validated.ok) {
+    svc.handleOut(validated.cfg);
+    const diff = shadowDiff(cfgOld, validated.cfg);
+    if (!svc.ephemeraldata && Object.keys(diff).length > 0)
+      onCfgDiff(diff);
   }
 }
 
@@ -82,13 +122,10 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
     this._fetchTimer = null;
     this._ready = true;
     const desired = resp.state.desired || {};
-    const merged = shadowMerge(resp.state.reported || {}, desired);
     const upd = {};
-    for (const key in merged) {
-      if (this._svcs[key] != null)
-        this._svcs[key].handleOut(merged[key]);
-      if (desired[key] != null)
-        upd[key] = shadowMerge({}, desired[key]);
+    for (const key in this._svcs) {
+      const svc = this._svcs[key];
+      processServiceCfg(svc, desired[key], (diff) => upd[key] = diff);
     }
     if (Object.keys(upd).length > 0)
       this.update({ reported: upd, desired: null });
@@ -101,9 +138,16 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
       sourceInitialShadowContent(this._thing, this._default_cmd)  : {};
     console.warn(`Creating shadow with ${Object.keys(initial).length} top-level keys.`);
     // Wipe any cached settings from a previous shadow
-    for (const key in this._svcs)
-      this._svcs[key].handleOut(initial[key] || {});
-    // Bypass and buffered updates so we can get the shadow created first.
+    for (const key in this._svcs) {
+      const svc = this._svcs[key];
+      // Validate and handle, updating the initial shadow as needed
+      const validated = validateServiceCfg(svc, initial[key]);
+      if (validated.ok) {
+        svc.handleOut(validated.cfg);
+        initial[key] = validated.cfg;
+      }
+    }
+    // Bypass any buffered updates so we can get the shadow created first.
     this._comms.update(this._thing, {
       clientToken: this._tokUpdate,
       state: { reported: initial }
@@ -149,11 +193,20 @@ Shadow.prototype.onDelta = function(resp) {
   const upd = {};
   for (const key in delta) {
     const svc = this._svcs[key];
-    if (svc != null)
-      svc.handleDeltaOut(delta[key]);
-    upd[key] = shadowMerge({}, delta[key]); // apply delete requests
+    processServiceCfg(svc, delta[key], (diff) => { upd[key] = diff; });
   }
   this.update({ reported: upd, desired: null });
+}
+
+
+Shadow.prototype.onLocalDelta = function(svcname, svcdelta) {
+  if (this._svcs == null || svcdelta == null)
+    return;
+  const svc = this._svcs[svcname];
+  processServiceCfg(svc, svcdelta, (diff) => {
+    const upd = { [svcname]: diff };
+    this.update({ reported: upd });
+  });
 }
 
 

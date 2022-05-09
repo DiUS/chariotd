@@ -1,4 +1,4 @@
-/* Copyright(C) 2019-2020 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
 'use strict';
 
 // Magic value to request key deletion in a device shadow, as AWS does not
@@ -25,7 +25,9 @@ function shadowMerge(target, source) {
         target[key] = source[key];
     }
   }
-  return target;
+  else if (target == null)
+    target = source;
+  return target || null; // undefined -> null
 }
 
 

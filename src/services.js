@@ -1,10 +1,9 @@
-/* Copyright(C) 2019-2020 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
 'use strict';
 
 const fs = require('fs');
 const child_process = require('child_process');
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
-const shadowMerge = require('./shadow_merge.js');
 const formats = {
   SHELL: require('./filefmt/shell.js'),
   JSON:  require('./filefmt/json.js'),
@@ -12,9 +11,14 @@ const formats = {
 
 function loadService(dir, fname) {
   const obj = require(`${dir}/${fname}`);
-  const expected = [ 'key', 'outfile', 'outformat', 'informat', 'notifycmd' ];
-  const optional = [ 'outkeys', 'notifykeys', 'initialnotify' ];
-  for (const key of expected) {
+  const expected = [ 'key', 'informat', 'notifycmd' ];
+  const unless_ephemeral = [ 'outfile', 'outformat' ];
+  const optional = [
+    'outkeys', 'notifykeys', 'initialnotify', 'validate', 'ephemeraldata'
+  ];
+  const needed =
+    [ ...expected, ...(obj.ephemeraldata ? [] : unless_ephemeral) ];
+  for (const key of needed) {
     if (!obj.hasOwnProperty(key)) {
       console.warn(`Skipped service definition in ${dir}/${fname} due to missing key ${key}`);
       return null;
@@ -55,6 +59,10 @@ function stringifyOut(fmt, obj) {
 
 
 function pick(obj, keylist) {
+  if (obj == null)
+    return obj; // null or undefined
+  else if (typeof(obj) != 'object' || Array.isArray(obj))
+    return obj; // can't pick keys from anything other than plain object
   if (keylist == null)
     return Object.assign({}, obj);
   return keylist.reduce((out, key) => {
@@ -68,7 +76,7 @@ function pick(obj, keylist) {
 function loadCurrentOutfile(svcdef) {
   try {
     const text = fs.readFileSync(svcdef.outfile, { encoding: 'utf8' });
-    return parseIn(svcdef.informat, text);
+    return parseIn(svcdef.outformat, text);
   }
   catch(e) {
     return null;
@@ -108,27 +116,39 @@ Service.prototype.notify = function() {
 }
 
 
+Service.prototype.writeOut = function(picked) {
+  console.info(`Writing updated outfile for '${this.key}'.`);
+  try {
+    const tmpfile = `${this.outfile}.tmp`;
+    fs.writeFileSync(tmpfile, formats[this.outformat].stringify(picked));
+    fs.renameSync(tmpfile, this.outfile);
+    return true;
+  }
+  catch(e) {
+    console.error(`Error: Failed to update outfile for '${this.key}':`, e);
+    return false;
+  }
+}
+
+
 Service.prototype.handleOut = function(obj) {
   const initial = this._initial;
   this._initial = false;
+  if (this.ephemeraldata) {
+    if (!initial || this.initialnotify)
+      this.notify();
+    return;
+  }
   const picked = pick(obj, this.outkeys);
-  const current = loadCurrentOutfile(this);
+  const current = this.getCurrentCfg();
   if (isDeepStrictEqual(picked, current)) {
     console.log(`No changes for service '${this.key}'.`);
     if (!initial || !this.initialnotify)
       return; // no changes, no notifications
   }
   else if (this.outfile != '/dev/null') {
-    console.info(`Writing updated outfile for '${this.key}'.`);
-    try {
-      const tmpfile = `${this.outfile}.tmp`;
-      fs.writeFileSync(tmpfile, formats[this.outformat].stringify(picked));
-      fs.renameSync(tmpfile, this.outfile);
-    }
-    catch(e) {
-      console.error(`Error: Failed to update outfile for '${this.key}':`, e);
+    if (!this.writeOut(picked))
       return;
-    }
   }
 
   if (initial || shouldNotify(picked, current, this.notifykeys))
@@ -136,13 +156,17 @@ Service.prototype.handleOut = function(obj) {
 }
 
 
-Service.prototype.handleDeltaOut = function(obj) {
-  const current = loadCurrentOutfile(this);
-  this.handleOut(shadowMerge(current || {}, obj));
+Service.prototype.getCurrentCfg = function() {
+  return loadCurrentOutfile(this);
+}
+
+Service.prototype.validate = function(cfg) {
+  return cfg;
 }
 
 
 module.exports = {
+  Service, // for testing
   loadServicesDir,
   parseIn,
   stringifyOut,
