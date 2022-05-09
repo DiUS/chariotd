@@ -5,7 +5,8 @@ node_js:
 install:
   - npm install
 script:
-  - npm test
+  - npm run check
+  - npm run test
 before_deploy:
   - npm version --no-git-tag-version --force "$TRAVIS_TAG"
   - npm pack

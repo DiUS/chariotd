@@ -41,7 +41,7 @@ function updateShadow(thing, dir, fname) {
       `Applying shadow update to '${thing}' for service '${svcname}'.`);
     try {
       const text = fs.readFileSync(`${dir}/${fname}`, { encoding: 'utf8' });
-      shadows[thing].onLocalDelta(svcname, services.parseIn(fmt, text);
+      shadows[thing].onLocalDelta(svcname, services.parseIn(fmt, text));
     }
     catch(e) {
       console.warn(`Error applying shadow update: ${e}`);
@@ -182,6 +182,11 @@ for (const arg of (options.tunnelmappings || [])) {
   console.info(`Secure tunnel config loaded for ${thing}.`);
 }
 
+// Note delete request compatibility, if needed
+if (options['empty-array-as-delete-request']) {
+  require('./shadow_merge.js').enableEmptyArrayDelete(true);
+  console.info('Supporting empty array as delete request.');
+}
 
 const shadows = {};
 

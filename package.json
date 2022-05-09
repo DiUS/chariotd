@@ -7,6 +7,7 @@
     "chariotd": "src/main.js"
   },
   "scripts": {
+    "check": "find src -name '*.js' | while read f; do echo Checking: $f; node -c $f; done",
     "test": "for t in test/*.js; do echo Running test: $t; ./$t || exit 1; done"
   },
   "author": "jmattsson@dius.com.au",

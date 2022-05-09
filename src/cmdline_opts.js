@@ -31,6 +31,9 @@ const cmdline = Getopt.create([
  [ '', 'keepalive=SECONDS',
    'send keep-alive ping every SECONDS (default 1200)' ],
 
+ [ '', 'empty-array-as-delete-request',
+   'Support treating an empty array the same as DELETE to indicate a removal request' ],
+
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
 

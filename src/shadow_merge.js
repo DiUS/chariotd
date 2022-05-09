@@ -5,6 +5,17 @@
 // support delete requests in "desired" natively.
 const DELETE = 'DELETE';
 
+// Optional support for [] (empty array) as the delete request value.
+let supportEmptyArrayAsDelete = false;
+
+
+function isDeleteRequest(val) {
+  if (supportEmptyArrayAsDelete && Array.isArray(val) && val.length == 0)
+      return true;
+
+  return val === DELETE;
+}
+
 
 function isObjectObject(x) {
   return x != null && typeof(x) == 'object' && !Array.isArray(x);
@@ -19,7 +30,7 @@ function shadowMerge(target, source) {
           target[key] = {}
         shadowMerge(target[key], source[key]);
       }
-      else if (typeof(source[key]) == 'string' && source[key] == DELETE)
+      else if (isDeleteRequest(source[key]))
         target[key] = null;
       else
         target[key] = source[key];
@@ -28,6 +39,11 @@ function shadowMerge(target, source) {
   else if (target == null)
     target = source;
   return target || null; // undefined -> null
+}
+
+
+shadowMerge.enableEmptyArrayDelete = function(flag) {
+  supportEmptyArrayAsDelete = !!flag;
 }
 
 

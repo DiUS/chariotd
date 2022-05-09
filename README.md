@@ -86,6 +86,7 @@ Past this the features are pick-and-choose.
   - `--tunnelmappings` - Enables listening for AWS IoT Secure Tunneling requests. Details available in the [Secure Tunneling](#secure-tunneling) section.
   - `--tunnelproxy` - Specifies the path to the secure tunneling proxy client to use.
   - `--tunnelcadir` - Specifies the directory where the tunnel proxy client can find the Amazon root CA certificate in an OpenSSL compatible format.
+  - `--empty-array-as-delete-request` - Specifies that empty arrays should be treated the same as `"DELETE"`, i.e. as a request to remove a key from the shadow. This was the early canonical way of submitting such requests, and this feature is provided for backwards compatibility and should not typically need to be used.
 
 
 ## Restarting chariotd
@@ -172,7 +173,7 @@ The service definition is expected to export an object with _at least_ these key
   - `key` - The top-level key in the device shadow this service uses.
   - `outfile`\* - Full path to the file where this service's configuration will be written.
   - `outformat`\* - Format of the "outfile". See [Service outfile formats](#service-outfile-formats) for available formats.
-  - `informat` - Format used for shadow updates; same options as for "outformat". It does NOT have to be the same as "outformat".
+  - `informat` - Format used for shadow updates; same options as for "outformat". It does NOT have to be the same as "outformat". Defaults to "JSON".
   - `notifycmd` - The command to issue whenever the "outfile" has been updated.
 
 Additionally the following keys may be included:
