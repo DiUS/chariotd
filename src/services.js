@@ -4,17 +4,21 @@
 const fs = require('fs');
 const child_process = require('child_process');
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
-const formats = {
-  SHELL: require('./filefmt/shell.js'),
-  JSON:  require('./filefmt/json.js'),
-}
+const formats = fs.readdirSync(`${__dirname}/filefmt`).reduce((obj, fname) => {
+  const name = fname.replace('.js', '').toUpperCase();
+  obj[name] = require(`./filefmt/${fname}`);
+  return obj;
+}, {});
+
+console.info(`Registered file formats: ${Object.keys(formats).join(', ')}`);
 
 function loadService(dir, fname) {
   const obj = require(`${dir}/${fname}`);
-  const expected = [ 'key', 'informat', 'notifycmd' ];
+  const expected = [ 'key', 'notifycmd' ];
   const unless_ephemeral = [ 'outfile', 'outformat' ];
   const optional = [
-    'outkeys', 'notifykeys', 'initialnotify', 'validate', 'ephemeraldata'
+    'informat', 'outkeys', 'notifykeys', 'initialnotify',
+    'validate', 'ephemeraldata'
   ];
   const needed =
     [ ...expected, ...(obj.ephemeraldata ? [] : unless_ephemeral) ];

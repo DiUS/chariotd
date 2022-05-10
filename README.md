@@ -203,6 +203,10 @@ The "outfile" is compared against whenever new device shadow data is available f
 
 ### Service outfile formats
 
+Out of the box chariotd supports a few common configuration file formats. It is possible to extend this by adding new definitions in the `src/filefmts/` directory. A file format is simply a module exposing `parse(data)` and `stringify(data)` functions, analogous to the standard `JSON` module. The `stringify(data)` is responsible for converting `data` into the appropriate representation to be written to the outfile, and `parse(data)` for converting such a representation back into standard JavaScript types (object, arrays, strings, numbers). The existing modules can be used as an implementation guide for new file formats.
+
+The file format is named as the uppercased version of the basename of the file. E.g. `shell.js` provides `SHELL` and `json.js` provides `JSON`.
+
 #### JSON
 
 The JSON outfile format is pretty self-explanatory. The only slightly odd aspect is that `null` values are not possible, due to the way the AWS IoT Device Shadow engine handles them (uses them to indicate key removal).
@@ -257,6 +261,10 @@ nested_x_yy='42'
 The reverse transformation is used for "informat", though it is a bit more lenient with the quotes.
 
 Note that when using the SHELL format, you are limited in what you can name your keys, as the key names have to also be valid shell variable names.
+
+#### PLAINTEXT
+
+Can be used for services which only contain a single text-string as its associated configuration in the device shadow. Allows for a simple method of populating a text file directly from the shadow.
 
 
 ## Shadow updates
