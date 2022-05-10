@@ -13,7 +13,7 @@
   "author": "jmattsson@dius.com.au",
   "license": "GPL-2.0",
   "dependencies": {
-    "aws-iot-device-sdk": "2.2.11",
+    "aws-iot-device-sdk": "2.2.12",
     "node-getopt": "0.3.2"
   },
   "bundledDependencies": [
