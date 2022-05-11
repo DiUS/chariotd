@@ -4,13 +4,17 @@
 const fs = require('fs');
 const child_process = require('child_process');
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
-const formats = fs.readdirSync(`${__dirname}/filefmt`).reduce((obj, fname) => {
-  const name = fname.replace('.js', '').toUpperCase();
-  obj[name] = require(`./filefmt/${fname}`);
-  return obj;
-}, {});
+const formats = fs.readdirSync(`${__dirname}/filefmt`)
+  .filter(fname => fname.endsWith('.js'))
+  .reduce((obj, fname) => {
+    const name = fname.replace('.js', '').toUpperCase();
+    obj[name] = require(`./filefmt/${fname}`);
+    return obj;
+  }, {});
 
 console.info(`Registered file formats: ${Object.keys(formats).join(', ')}`);
+
+const DEFAULT_TIMEOUT = 10;
 
 function loadService(dir, fname) {
   const obj = require(`${dir}/${fname}`);
@@ -18,7 +22,7 @@ function loadService(dir, fname) {
   const unless_ephemeral = [ 'outfile', 'outformat' ];
   const optional = [
     'informat', 'outkeys', 'notifykeys', 'initialnotify',
-    'validate', 'ephemeraldata'
+    'validate', 'ephemeraldata', 'timeout',
   ];
   const needed =
     [ ...expected, ...(obj.ephemeraldata ? [] : unless_ephemeral) ];
@@ -35,6 +39,8 @@ function loadService(dir, fname) {
       return null;
     }
   }
+  if (obj.timeout == null || +obj.timeout < 1)
+    obj.timeout = DEFAULT_TIMEOUT;
   console.info(`Service '${obj.key}' loaded from ${dir}/${fname}`);
   return obj;
 }
@@ -108,7 +114,7 @@ Service.prototype.notify = function() {
   console.info(`Notifying service '${this.key}'.`);
   const opts = {
     cwd: '/',
-    timeout: 10*1000,
+    timeout: this.timeout*1000,
     killSignal: 'SIGKILL',
   };
   child_process.exec(this.notifycmd, opts, (err, stdout, stderr) => {
@@ -120,9 +126,11 @@ Service.prototype.notify = function() {
 }
 
 
-Service.prototype.writeOut = function(picked) {
-  console.info(`Writing updated outfile for '${this.key}'.`);
+Service.prototype.writeOut = function(obj) {
+  if (this.ephemeraldata || this.outfile == null)
+    return true;
   try {
+    const picked = pick(obj, this.outkeys);
     const tmpfile = `${this.outfile}.tmp`;
     fs.writeFileSync(tmpfile, formats[this.outformat].stringify(picked));
     fs.renameSync(tmpfile, this.outfile);

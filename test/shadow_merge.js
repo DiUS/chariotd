@@ -42,3 +42,7 @@ shadowMerge.enableEmptyArrayDelete(true);
 const m3 = shadowMerge({ a: 1 }, { a: [] });
 assert.deepEqual(m3, { a: null });
 shadowMerge.enableEmptyArrayDelete(false);
+
+// Validate non-object replacement merge
+const m4 = shadowMerge('str', 'replace');
+assert(m4 == 'replace');

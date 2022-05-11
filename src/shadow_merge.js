@@ -36,9 +36,13 @@ function shadowMerge(target, source) {
         target[key] = source[key];
     }
   }
-  else if (target == null)
+  else if (source === undefined) // no-merge
+    return target;
+  else if (isDeleteRequest(source)) // top-level delete
+    target = null;
+  else // top-level value
     target = source;
-  return target || null; // undefined -> null
+  return (target != null) ? target : null; // undefined -> null
 }
 
 

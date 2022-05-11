@@ -169,5 +169,59 @@ assert(svc2.cfg == null); // ephemeral
 assert.deepEqual(svc3.cfg, { value: 42 });
 assert(svc4.cfg == 'data');
 assert(svc5.cfg == null);
+clear();
 
+// Validate delta type change
+svc1.cfg = { x: 1 };
+shadow1.onDelta({ state: { svc1: 'str' } });
+assert(svc1.notified);
+assert(svc1.cfg == 'str');
+clear();
+
+// Validate zero length string
+svc1.cfg = 'str';
+shadow1.onDelta({ state: { svc1: '' } });
+assert(svc1.notified);
+assert(svc1.cfg == '');
+clear();
+
+// Validate removal
+svc1.cfg = { x: 1 };
+shadow1.onDelta({ state: { svc1: 'DELETE' } });
+assert(svc1.notified);
+assert(svc1.cfg == null);
+clear();
+
+// Validate empty array delta (non-delete request)
+svc1.cfg = [ 1, 2 ];
+shadow1.onDelta({ state: { svc1: [] }});
+assert(svc1.notified);
+assert.deepEqual(svc1.cfg, []);
+clear();
+
+// Validate that no merge is attempted on fetch with no desired
+const reported_nomerge = {
+  svc1: { x: 1 },
+  svc2: { y: 2 },
+  svc3: { z: 3 },
+  svc4: {aa: 4 },
+  svc5: {ab: 5 },
+};
+svc1.cfg = reported_nomerge.svc1;
+svc2.cfg = reported_nomerge.svc2;
+svc3.cfg = reported_nomerge.svc3;
+svc4.cfg = reported_nomerge.svc4;
+svc5.cfg = reported_nomerge.svc5;
+shadow1.fetch();
+shadow1.onFetchStatus('accepted', { state: { reported: reported_nomerge }});
+assert(!svc1.notified);
+assert(svc2.notified); // ephemeral data always notifies
+assert(svc3.notified);
+assert(!svc4.notified);
+assert(!svc5.notified);
+assert.deepEqual(svc1.cfg, { x: 1 });
+assert.deepEqual(svc2.cfg, { y: 2 }); // ephemeral data doesn't update cfg
+assert.deepEqual(svc3.cfg, { value: 42 }); // validate override
+assert.deepEqual(svc4.cfg, {aa: 4 });
+assert.deepEqual(svc5.cfg, {ab: 5 });
 clear();

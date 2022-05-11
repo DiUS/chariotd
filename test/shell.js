@@ -32,3 +32,6 @@ const unsupported_keep_numbers_as_strings = { a: ' 1' };
 assert.notDeepEqual(unsupported_keep_numbers_as_strings, sh.parse(sh.stringify(unsupported_keep_numbers_as_strings)));
 const ensure_no_nulls = { a: null };
 assert.notDeepEqual(ensure_no_nulls, sh.parse(sh.stringify(ensure_no_nulls)));
+
+// Validate no surplus null elements from array
+assert.deepEqual(sh.parse("arr=('G'  'G' )"), { arr: [ 'G', 'G' ] });

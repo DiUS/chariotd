@@ -50,14 +50,19 @@ function validateServiceCfg(svc, cfg) {
 }
 
 
-function processServiceCfg(svc, cfgDelta, onCfgDiff) {
-  const cfgOld = svc.getCurrentCfg();
+function processServiceCfg(svc, cfgOld, cfgDelta, onCfgDiff) {
   const merged = shadowMerge(svc.getCurrentCfg(), cfgDelta);
   const validated = validateServiceCfg(svc, merged);
   if (validated.ok) {
     svc.handleOut(validated.cfg);
     const diff = shadowDiff(cfgOld, validated.cfg);
-    if (!svc.ephemeraldata && Object.keys(diff).length > 0)
+    const have_entries =
+      Array.isArray(diff) || (
+        (diff != null) &&
+        (typeof(diff) == 'object') &&
+        (Object.keys(diff).length > 0)
+      );
+    if (!svc.ephemeraldata && (have_entries || typeof(diff) != 'object'))
       onCfgDiff(diff);
   }
 }
@@ -121,11 +126,15 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
     clearTimeout(this._fetchTimer); // may be null
     this._fetchTimer = null;
     this._ready = true;
+    const reported = resp.state.reported || {};
     const desired = resp.state.desired || {};
     const upd = {};
     for (const key in this._svcs) {
       const svc = this._svcs[key];
-      processServiceCfg(svc, desired[key], (diff) => upd[key] = diff);
+      if (svc != null)
+        processServiceCfg(svc, reported[key], desired[key], (diff) => {
+          upd[key] = diff;
+        });
     }
     if (Object.keys(upd).length > 0)
       this.update({ reported: upd, desired: null });
@@ -193,7 +202,10 @@ Shadow.prototype.onDelta = function(resp) {
   const upd = {};
   for (const key in delta) {
     const svc = this._svcs[key];
-    processServiceCfg(svc, delta[key], (diff) => { upd[key] = diff; });
+    if (svc != null)
+      processServiceCfg(svc, svc.getCurrentCfg(), delta[key], (diff) => {
+        upd[key] = diff;
+      });
   }
   this.update({ reported: upd, desired: null });
 }
@@ -203,10 +215,12 @@ Shadow.prototype.onLocalDelta = function(svcname, svcdelta) {
   if (this._svcs == null || svcdelta == null)
     return;
   const svc = this._svcs[svcname];
-  processServiceCfg(svc, svcdelta, (diff) => {
-    const upd = { [svcname]: diff };
-    this.update({ reported: upd });
-  });
+  if (svc != null) {
+    processServiceCfg(svc, svc.getCurrentCfg(), svcdelta, (diff) => {
+      const upd = { [svcname]: diff };
+      this.update({ reported: upd });
+    });
+  }
 }
 
 

@@ -65,13 +65,17 @@ function parseArray(s) {
   if (s.length == 2)
     return out;
   var in_quote = false;
-  var start = 1;
+  var start = null;
   for (var i = 1; i < s.length; ++i) {
-    if (s[i] == "'" && s[i-1] != '\\')
+    if (s[i] == "'" && s[i-1] != '\\') {
       in_quote = !in_quote;
+      if (start == null)
+        start = i;
+    }
     else if ((s[i] == ' ' || s[i] == ')') && !in_quote) {
-      out.push(parseValue(unquote(s.substring(start, i).trim())));
-      start = i + 1;
+      if (start != null)
+        out.push(parseValue(unquote(s.substring(start, i).trim())));
+      start = null;
     }
   }
   return out;
