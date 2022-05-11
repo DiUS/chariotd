@@ -30,7 +30,7 @@ function loadService(dir, fname) {
   }
   const known_formats = Object.keys(formats);
   for (const key of [ 'outformat', 'informat' ]) {
-    if (known_formats.indexOf(obj[key]) < 0) {
+    if (obj[key] != null && known_formats.indexOf(obj[key]) < 0) {
       console.warn(`Skipped service definition in ${dir}/${fname} due to unknown format '${obj[key]}' in ${key}`);
       return null;
     }
