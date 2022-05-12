@@ -26,6 +26,22 @@ function splitArg(x) {
 }
 
 
+function prepareLastWill() {
+  if (options['last-will-topic'] != null &&
+      options['last-will-payload'] != null) {
+    return {
+      will: {
+        topic: options['last-will-topic'],
+        payload: options['last-will-payload'],
+        qos: 1,
+      }
+    };
+  }
+  else
+    return undefined;
+}
+
+
 function refetchShadows() {
   for (const key in shadows)
     shadows[key].fetch();
@@ -220,8 +236,9 @@ function connect() {
   const keepalive = options.keepalive != null ? +options.keepalive : 1200;
   const alpn = (ourcerts.preferred.port == 443) ?
     { ALPNProtocols: [ 'x-amzn-mqtt-ca' ] } : undefined;
+  const lwt = prepareLastWill();
   const comms = awsiot.thingShadow(
-    Object.assign({ keepalive }, ourcerts.preferred, alpn));
+    Object.assign({ keepalive }, ourcerts.preferred, alpn, lwt));
   const registered = {};
   ++comms_attempts;
   comms.on('connect', () => {
@@ -279,7 +296,7 @@ function connect() {
       tunnel.handleMessage(payload);
   });
   comms.on('error', err => {
-    console.error('AWS IoT Core connection reported error:', err);
+    console.error(`AWS IoT Core connection reported error: ${err}`);
     checkCommsAttempts();
   });
   comms.on('close', () => console.warn('Lost connection to AWS IoT Core.'));
@@ -345,6 +362,11 @@ async function attemptFleetProvisioning() {
 
 
 // -- Initial startup ----------------------------------------------------
+
+if (prepareLastWill())
+  console.info(`Found Last-Will-and-Testament settings; will register LWT.`);
+else
+  console.info(`No Last-Will-and-Testament settings; won't register LWT.`);
 
 if (ourcerts.preferred == null) {
   if (options.fleetprov != null) {

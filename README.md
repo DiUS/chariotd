@@ -87,6 +87,8 @@ Past this the features are pick-and-choose.
   - `--tunnelproxy` - Specifies the path to the secure tunneling proxy client to use.
   - `--tunnelcadir` - Specifies the directory where the tunnel proxy client can find the Amazon root CA certificate in an OpenSSL compatible format.
   - `--empty-array-as-delete-request` - Specifies that empty arrays should be treated the same as `"DELETE"`, i.e. as a request to remove a key from the shadow. This was the early canonical way of submitting such requests, and this feature is provided for backwards compatibility and should not typically need to be used.
+  - `--last-will-topic` - Sets the topic any Last-Will-and-Testament payload should be published to. To be used in conjunction with `--last-will-payload`.
+  - `--last-will-payload` - Specifies the payload of a Last-Will-and-Testament message to be registered with the AWS IoT Gateway, to be published if the client disconnects unexpectedly. The destination topic is set with `--last-will-topic`.
 
 
 ## Restarting chariotd

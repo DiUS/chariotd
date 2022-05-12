@@ -32,7 +32,12 @@ const cmdline = Getopt.create([
    'send keep-alive ping every SECONDS (default 1200)' ],
 
  [ '', 'empty-array-as-delete-request',
-   'Support treating an empty array the same as DELETE to indicate a removal request' ],
+   'support treating an empty array the same as DELETE to indicate a removal request' ],
+
+ [ '', 'last-will-topic=TOPIC',
+   'send last-will-and-testament payload (if any) to TOPIC' ],
+ [ '', 'last-will-payload=PAYLOAD',
+   'register PAYLOAD as the last-will-and-testament' ],
 
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
