@@ -147,7 +147,7 @@ Service.prototype.handleOut = function(obj) {
   const initial = this._initial;
   this._initial = false;
   if (this.ephemeraldata) {
-    if (!initial || this.initialnotify)
+    if (obj != null && (!initial || this.initialnotify))
       this.notify();
     return;
   }

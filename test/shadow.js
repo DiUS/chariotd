@@ -225,3 +225,9 @@ assert.deepEqual(svc3.cfg, { value: 42 }); // validate override
 assert.deepEqual(svc4.cfg, {aa: 4 });
 assert.deepEqual(svc5.cfg, {ab: 5 });
 clear();
+
+// Validate no notification of ephemeraldata service in absence of data
+shadow1.fetch();
+shadow1.onFetchStatus('accepted', { state: { reported: {}}});
+assert(!svc2.notified);
+clear();
