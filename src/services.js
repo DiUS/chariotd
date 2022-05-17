@@ -163,8 +163,11 @@ Service.prototype.handleOut = function(obj) {
       return;
   }
 
-  if (initial || shouldNotify(picked, current, this.notifykeys))
+  if ((initial && this.initialnotify) ||
+      shouldNotify(picked, current, this.notifykeys))
     this.notify();
+  else
+    console.log(`No notification needed for '${this.key}.`);
 }
 
 

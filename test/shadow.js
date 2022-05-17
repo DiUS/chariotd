@@ -74,14 +74,25 @@ const svc4 = new Service({ // initialnotify
 });
 
 const svc5 = new Service({ // update rejecter
-  key: 'svc4',
-  outfile: 'svc4.rc',
+  key: 'svc5',
+  outfile: 'svc5.rc',
   outformat: 'JSON',
   informat: 'JSON',
-  notify: () => { svc4.notified = true; },
+  notify: () => { svc5.notified = true; },
   validate: function(cfg) { throw new Error("intentional"); },
   writeOut: (cfg) => storeCfg(svc5, cfg),
   getCurrentCfg: () => slowClone(svc5.cfg),
+});
+
+const svc6 = new Service({ // notifykeys filter with dynamic validate
+  key: 'svc6',
+  outfile: 'svc6.json',
+  outformat: 'JSON',
+  validate: (cfg) => { (cfg || {}).dynam = 1; return cfg; },
+  notifykeys: [ 'ntf' ],
+  notify: () => { svc6.notified = true; },
+  writeOut: (cfg) => storeCfg(svc6, cfg),
+  getCurrentCfg: () => slowClone(svc6.cfg),
 });
 
 // Cleanup
@@ -89,7 +100,7 @@ const svc5 = new Service({ // update rejecter
 function clear()
 {
   [ 'cfg', 'notified' ].forEach(
-    k => [ svc1, svc2, svc3, svc4, svc5 ].forEach(
+    k => [ svc1, svc2, svc3, svc4, svc5, svc6 ].forEach(
       s => delete s[k]
     )
   );
@@ -101,7 +112,8 @@ function clear()
 
 // Shadow setup
 
-const shadow1 = new Shadow(mock_comms, THING, { svc1, svc2, svc3, svc4, svc5 });
+const shadow1 =
+  new Shadow(mock_comms, THING, { svc1, svc2, svc3, svc4, svc5, svc6 });
 
 // Validate initial processing of services/configs
 shadow1.onFetchStatus('accepted', { state: {} }); // fetch pending after new
@@ -231,3 +243,12 @@ shadow1.fetch();
 shadow1.onFetchStatus('accepted', { state: { reported: {}}});
 assert(!svc2.notified);
 clear();
+
+// Validate no accidental initial notify when notifykeys set
+svc6._initial = true;
+svc6.cfg = { no: 1 };
+shadow1.fetch();
+shadow1.onFetchStatus('accepted', { state: { reported: { svc6: svc6.cfg }}});
+assert(!svc6.notified);
+clear();
+
