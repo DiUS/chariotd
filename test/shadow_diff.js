@@ -100,3 +100,9 @@ assert.deepEqual(diff8, [ 1, 2, 3 ]);
 
 const diff9 = shadowDiff({ key: [ 1, 2, 3 ] }, { key: { a: 1, b: 2 }});
 assert.deepEqual(diff9, { key: { a: 1, b: 2 }});
+
+// Validate delta merge regression fix
+const diff10_a = { svc: { key: {           } } };
+const diff10_b = { svc: { key: { sub: null } } };
+const diff10 = shadowDiff(diff10_a, diff10_b);
+assert.deepEqual(diff10, diff10_b);

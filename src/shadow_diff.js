@@ -19,8 +19,12 @@ function deepMissing(oldobj, newobj, out) {
     else if (typeof(a) == 'object' && typeof(b) == 'object' &&
             !Array.isArray(a)) {
       const delta = deepMissing(a, b, {});
-      if (Object.keys(delta).length > 0)
+      // Only merge in non-empty deltas
+      if (Object.keys(delta).length > 0) {
+        if (diff[k] == null)
+          diff[k] = {};
         Object.assign(diff[k], delta);
+      }
     }
     return diff;
   }, out || {});
