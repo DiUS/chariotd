@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const Shadow = require('../src/shadow.js');
+const ShadowNormalise = require('../src/shadow_normalise.js');
 const Service = require('../src/services.js').Service;
 const assert = require('assert').strict;
 
@@ -209,6 +210,13 @@ svc1.cfg = [ 1, 2 ];
 shadow1.onDelta({ state: { svc1: [] }});
 assert(svc1.notified);
 assert.deepEqual(svc1.cfg, []);
+clear();
+
+// Validate suppression of existing empty arrays (delete request)
+ShadowNormalise.enableEmptyArrayDelete(true);
+shadow1.onFetchStatus('accepted', { state: { reported: { svc1: [] }}});
+assert.deepEqual(mock_comms.last_update_state.reported.svc1, null);
+ShadowNormalise.enableEmptyArrayDelete(false);
 clear();
 
 // Validate that no merge is attempted on fetch with no desired

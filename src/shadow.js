@@ -58,7 +58,7 @@ function processServiceCfg(svc, cfgOld, cfgDelta, onCfgDiff) {
     svc.handleOut(validated.cfg);
     const diff = shadowDiff(cfgOld, validated.cfg);
     const have_entries =
-      Array.isArray(diff) || (
+      Array.isArray(diff) || diff == null || (
         (diff != null) &&
         (typeof(diff) == 'object') &&
         (Object.keys(diff).length > 0)
