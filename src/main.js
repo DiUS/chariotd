@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2023 DiUS Computing Pty Ltd */
 'use strict';
 
 const awsiot = require('aws-iot-device-sdk');
@@ -200,7 +200,7 @@ for (const arg of (options.tunnelmappings || [])) {
 
 // Note delete request compatibility, if needed
 if (options['empty-array-as-delete-request']) {
-  require('./shadow_merge.js').enableEmptyArrayDelete(true);
+  require('./shadow_normalise.js').enableEmptyArrayDelete(true);
   console.info('Supporting empty array as delete request.');
 }
 

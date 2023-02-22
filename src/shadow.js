@@ -1,9 +1,10 @@
-/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2023 DiUS Computing Pty Ltd */
 'use strict';
 
 const child_process = require('child_process');
 const shadowMerge = require('./shadow_merge.js');
 const shadowDiff = require('./shadow_diff.js');
+const shadowNormalise = require('./shadow_normalise.js');
 
 
 function sourceInitialShadowContent(thing, cmd) {
@@ -15,7 +16,7 @@ function sourceInitialShadowContent(thing, cmd) {
       killSignal: 'SIGKILL',
     };
     console.log(`Sourcing initial shadow content for '${thing}' via '${cmd}'...`);
-    return JSON.parse(child_process.execSync(cmd, cmd_opts));
+    return shadowNormalise(JSON.parse(child_process.execSync(cmd, cmd_opts)));
   }
   catch(e) {
     console.warn(`Failed to source initial shadow content via '${cmd}': ${e}`);
@@ -36,7 +37,7 @@ function validateServiceCfg(svc, cfg) {
     cfg = null;
 
   let ok = true;
-  try { cfg = svc.validate(cfg); }
+  try { cfg = shadowNormalise(svc.validate(cfg)); }
   catch(e)
   {
     console.warn(`Validation of ${svc.key} failed: ${e}`);

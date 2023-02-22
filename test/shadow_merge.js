@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const shadowMerge = require('../src/shadow_merge.js');
+const shadowNormalise = require('../src/shadow_normalise.js');
 const assert = require('assert').strict;
 
 // Validate typical merge
@@ -38,10 +39,12 @@ const m2 = shadowMerge({ a: 1 }, { a: [] });
 assert.deepEqual(m2, { a: [] });
 
 // Validate empty array as delete request
-shadowMerge.enableEmptyArrayDelete(true);
+shadowNormalise.enableEmptyArrayDelete(true);
 const m3 = shadowMerge({ a: 1 }, { a: [] });
 assert.deepEqual(m3, { a: null });
-shadowMerge.enableEmptyArrayDelete(false);
+const m3b = shadowMerge({ x: [] }, undefined);
+assert.deepEqual(m3b, { x: null });
+shadowNormalise.enableEmptyArrayDelete(false);
 
 // Validate non-object replacement merge
 const m4 = shadowMerge('str', 'replace');

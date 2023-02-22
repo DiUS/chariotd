@@ -1,20 +1,7 @@
-/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2023 DiUS Computing Pty Ltd */
 'use strict';
 
-// Magic value to request key deletion in a device shadow, as AWS does not
-// support delete requests in "desired" natively.
-const DELETE = 'DELETE';
-
-// Optional support for [] (empty array) as the delete request value.
-let supportEmptyArrayAsDelete = false;
-
-
-function isDeleteRequest(val) {
-  if (supportEmptyArrayAsDelete && Array.isArray(val) && val.length == 0)
-      return true;
-
-  return val === DELETE;
-}
+const normalise = require('./shadow_normalise.js');
 
 
 function isObjectObject(x) {
@@ -30,25 +17,21 @@ function shadowMerge(target, source) {
           target[key] = {}
         shadowMerge(target[key], source[key]);
       }
-      else if (isDeleteRequest(source[key]))
-        target[key] = null;
       else
         target[key] = source[key];
     }
   }
   else if (source === undefined) // no-merge
     return target;
-  else if (isDeleteRequest(source)) // top-level delete
-    target = null;
   else // top-level value
     target = source;
   return (target != null) ? target : null; // undefined -> null
 }
 
 
-shadowMerge.enableEmptyArrayDelete = function(flag) {
-  supportEmptyArrayAsDelete = !!flag;
+function shadowMergeAndNormalise(target, source)
+{
+  return normalise(shadowMerge(target, source));
 }
 
-
-module.exports = shadowMerge;
+module.exports = shadowMergeAndNormalise;

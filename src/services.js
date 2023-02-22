@@ -1,6 +1,7 @@
-/* Copyright(C) 2019-2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2019-2023 DiUS Computing Pty Ltd */
 'use strict';
 
+const shadowNormalise = require('./shadow_normalise.js');
 const fs = require('fs');
 const child_process = require('child_process');
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
@@ -172,7 +173,7 @@ Service.prototype.handleOut = function(obj) {
 
 
 Service.prototype.getCurrentCfg = function() {
-  return loadCurrentOutfile(this);
+  return shadowNormalise(loadCurrentOutfile(this));
 }
 
 Service.prototype.validate = function(cfg) {
