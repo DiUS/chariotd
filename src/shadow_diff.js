@@ -2,7 +2,15 @@
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
 
 function isObject(x) {
-  return typeof(x) == 'object' && !Array.isArray(x);
+  return typeof(x) == 'object' && !Array.isArray(x) && (x != null);
+}
+
+
+function filterEmpty(o) {
+  if (!isObject(o))
+    return o;
+  else
+    return (Object.keys(o).length > 0) ? o : undefined;
 }
 
 
@@ -30,7 +38,7 @@ function deepMissing(oldobj, newobj, out) {
 }
 
 
-function recursiveDiff(oldobj, newobj, out) {
+function recursiveDiff(oldobj, newobj) {
   // Walk keys in oldobj recursively, picking out differences
   const pass1 = Object.keys(oldobj).reduce((diff, k) => {
     const a = oldobj[k];
@@ -42,8 +50,8 @@ function recursiveDiff(oldobj, newobj, out) {
         diff[k] = b; // whole-array diff
     }
     else if (isObject(a) && isObject(b)) {
-      const delta = shadowDiff(a, b, {}); // recursive diff
-      if (Object.keys(delta).length > 0)
+      const delta = recursiveDiff(a, b); // recursive diff
+      if (delta !== undefined && Object.keys(delta).length > 0)
         diff[k] = delta;
     }
     else if (b === undefined)
@@ -51,21 +59,25 @@ function recursiveDiff(oldobj, newobj, out) {
     else
       diff[k] = b; // value diff
     return diff;
-  }, out || {});
+  }, {});
 
   return deepMissing(oldobj, newobj, pass1);
 }
 
 
-function shadowDiff(oldobj, newobj, out) {
-  if (oldobj == null && newobj == null)
+/* Returns:
+ *   undefined  if oldobj deepstrictequal newobj or newobj === undefined
+ *   null       if newobj is null and oldobj is anything but null (deletion)
+ *   newobj     if newobj is non-object type and not deepstrictqual oldobj
+ *   <object>   containing recursive differences between oldobj and newobj
+ */
+function shadowDiff(oldobj, newobj) {
+  if (oldobj !== null && newobj === null) // deletion
     return null;
   else if (!isObject(oldobj) || !isObject(newobj)) // str, num, bool, array, etc
-    return isDeepStrictEqual(oldobj, newobj) ? null : newobj;
-  else if (oldobj == null || newobj == null)
-    return deepMissing(oldobj, newobj, out || {});
+    return isDeepStrictEqual(oldobj, newobj) ? undefined : newobj;
   else
-    return recursiveDiff(oldobj, newobj, out || {});
+    return filterEmpty(recursiveDiff(oldobj, newobj));
 }
 
 module.exports = shadowDiff;

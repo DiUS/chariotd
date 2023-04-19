@@ -18,7 +18,9 @@ function isDeleteRequest(val) {
 
 // Process delete requests into null values
 function normalise(val) {
-  if (val == null || isDeleteRequest(val))
+  if (val === undefined || val === null)
+    return val;
+  else if (isDeleteRequest(val))
     return null;
   else if (typeof(val) == 'object') {
     for (const key in val) {

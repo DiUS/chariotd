@@ -90,7 +90,7 @@ function loadCurrentOutfile(svcdef) {
     return parseIn(svcdef.outformat, text);
   }
   catch(e) {
-    return null;
+    return undefined;
   }
 }
 

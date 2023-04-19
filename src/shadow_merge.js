@@ -25,7 +25,8 @@ function shadowMerge(target, source) {
     return target;
   else // top-level value
     target = source;
-  return (target != null) ? target : null; // undefined -> null
+
+  return target;
 }
 
 

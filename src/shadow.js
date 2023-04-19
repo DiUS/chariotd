@@ -32,9 +32,6 @@ function validateServiceCfg(svc, cfg) {
       cfg: null,
     }
   }
-  // Avoid confusion between undefined/null
-  if (cfg === undefined)
-    cfg = null;
 
   let ok = true;
   try { cfg = shadowNormalise(svc.validate(cfg)); }
@@ -57,13 +54,7 @@ function processServiceCfg(svc, cfgOld, cfgDelta, onCfgDiff) {
   if (validated.ok) {
     svc.handleOut(validated.cfg);
     const diff = shadowDiff(cfgOld, validated.cfg);
-    const have_entries =
-      Array.isArray(diff) || diff == null || (
-        (diff != null) &&
-        (typeof(diff) == 'object') &&
-        (Object.keys(diff).length > 0)
-      );
-    if (!svc.ephemeraldata && (have_entries || typeof(diff) != 'object'))
+    if (!svc.ephemeraldata && diff !== undefined)
       onCfgDiff(diff);
   }
 }

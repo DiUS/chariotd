@@ -77,14 +77,12 @@ assert.deepEqual(diff1, {
   svc8: null,
 });
 
-const diff2 = shadowDiff({}, {});
-assert(JSON.stringify(diff2) == "{}");
+assert.deepEqual(shadowDiff({}, {}), undefined);
 
-const diff3 = shadowDiff(null, { key: 'value' });
-assert.deepEqual(diff3, { key: 'value' });
+assert.deepEqual(shadowDiff(null, { key: 'value' }), { key: 'value' });
+assert.deepEqual(shadowDiff(undefined, { key: 'value' }), { key: 'value' });
 
-const diff4 = shadowDiff({ key: 'value' }, null);
-assert(JSON.stringify(diff4) == '{}');
+assert.deepEqual(shadowDiff({ key: 'value' }, undefined), undefined);
 
 const diff5 = shadowDiff({ a: { going: true } }, { a: {} });
 assert.deepEqual(diff5, { a: { going: null }});
@@ -112,8 +110,8 @@ const diff11 = shadowDiff({ key: { sub: null } }, { key: { sub: [ {} ] } });
 assert.deepEqual(diff11, { key: { sub: [ {} ] } });
 
 // Validate null diff on top-level non-object values
-assert.deepEqual(shadowDiff('xyz', 'xyz'), null);
-assert.deepEqual(shadowDiff(42, 42), null);
-assert.deepEqual(shadowDiff(true, true), null);
-assert.deepEqual(shadowDiff(null, null), null);
-assert.deepEqual(shadowDiff([], []), null);
+assert.deepEqual(shadowDiff('xyz', 'xyz'), undefined);
+assert.deepEqual(shadowDiff(42, 42), undefined);
+assert.deepEqual(shadowDiff(true, true), undefined);
+assert.deepEqual(shadowDiff(null, null), undefined);
+assert.deepEqual(shadowDiff([], []), undefined);
