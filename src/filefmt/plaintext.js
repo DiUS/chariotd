@@ -1,5 +1,5 @@
-/* Copyright(C) 2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2022-2023 DiUS Computing Pty Ltd */
 module.exports = {
-  parse: (text) => ''+text,
-  stringify: (data) => ''+data,
+  parse: (text) => (text != null) ? ''+text : null,
+  stringify: (data) => (data != null) ? ''+data : null,
 }
