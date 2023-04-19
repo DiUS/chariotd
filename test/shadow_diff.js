@@ -77,8 +77,8 @@ assert.deepEqual(diff1, {
   svc8: null,
 });
 
-const diff2 = shadowDiff(null, null);
-assert(JSON.stringify(diff2) == '{}');
+const diff2 = shadowDiff({}, {});
+assert(JSON.stringify(diff2) == "{}");
 
 const diff3 = shadowDiff(null, { key: 'value' });
 assert.deepEqual(diff3, { key: 'value' });
@@ -110,3 +110,10 @@ assert.deepEqual(diff10, diff10_b);
 // Validate null->array merge regression fix
 const diff11 = shadowDiff({ key: { sub: null } }, { key: { sub: [ {} ] } });
 assert.deepEqual(diff11, { key: { sub: [ {} ] } });
+
+// Validate null diff on top-level non-object values
+assert.deepEqual(shadowDiff('xyz', 'xyz'), null);
+assert.deepEqual(shadowDiff(42, 42), null);
+assert.deepEqual(shadowDiff(true, true), null);
+assert.deepEqual(shadowDiff(null, null), null);
+assert.deepEqual(shadowDiff([], []), null);

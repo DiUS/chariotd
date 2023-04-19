@@ -30,16 +30,7 @@ function deepMissing(oldobj, newobj, out) {
 }
 
 
-function shadowDiff(oldobj, newobj, out) {
-  if (out == null) // null/undefined
-    out = {};
-  if (oldobj == null && newobj == null)
-    return out;
-  else if (!isObject(oldobj) || !isObject(newobj))
-    return newobj;
-  else if (oldobj == null || newobj == null)
-    return deepMissing(oldobj, newobj, out);
-
+function recursiveDiff(oldobj, newobj, out) {
   // Walk keys in oldobj recursively, picking out differences
   const pass1 = Object.keys(oldobj).reduce((diff, k) => {
     const a = oldobj[k];
@@ -63,6 +54,18 @@ function shadowDiff(oldobj, newobj, out) {
   }, out || {});
 
   return deepMissing(oldobj, newobj, pass1);
+}
+
+
+function shadowDiff(oldobj, newobj, out) {
+  if (oldobj == null && newobj == null)
+    return null;
+  else if (!isObject(oldobj) || !isObject(newobj)) // str, num, bool, array, etc
+    return isDeepStrictEqual(oldobj, newobj) ? null : newobj;
+  else if (oldobj == null || newobj == null)
+    return deepMissing(oldobj, newobj, out || {});
+  else
+    return recursiveDiff(oldobj, newobj, out || {});
 }
 
 module.exports = shadowDiff;
