@@ -1,4 +1,4 @@
-/* Copyright(C) 2022 DiUS Computing Pty Ltd */
+/* Copyright(C) 2022-2023 DiUS Computing Pty Ltd */
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
 
 function isObject(x) {
@@ -16,8 +16,7 @@ function deepMissing(oldobj, newobj, out) {
     const b = newobj[k];
     if (a === undefined)
       diff[k] = b;
-    else if (typeof(a) == 'object' && typeof(b) == 'object' &&
-            !Array.isArray(a)) {
+    else if (isObject(a) && isObject(b)) {
       const delta = deepMissing(a, b, {});
       // Only merge in non-empty deltas
       if (Object.keys(delta).length > 0) {
@@ -65,6 +64,5 @@ function shadowDiff(oldobj, newobj, out) {
 
   return deepMissing(oldobj, newobj, pass1);
 }
-
 
 module.exports = shadowDiff;

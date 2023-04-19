@@ -106,3 +106,7 @@ const diff10_a = { svc: { key: {           } } };
 const diff10_b = { svc: { key: { sub: null } } };
 const diff10 = shadowDiff(diff10_a, diff10_b);
 assert.deepEqual(diff10, diff10_b);
+
+// Validate null->array merge regression fix
+const diff11 = shadowDiff({ key: { sub: null } }, { key: { sub: [ {} ] } });
+assert.deepEqual(diff11, { key: { sub: [ {} ] } });
