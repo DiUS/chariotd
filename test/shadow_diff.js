@@ -101,7 +101,7 @@ assert.deepEqual(diff9, { key: { a: 1, b: 2 }});
 
 // Validate delta merge regression fix
 const diff10_a = { svc: { key: {           } } };
-const diff10_b = { svc: { key: { sub: null } } };
+const diff10_b = { svc: { key: { sub: 1 } } };
 const diff10 = shadowDiff(diff10_a, diff10_b);
 assert.deepEqual(diff10, diff10_b);
 
@@ -115,3 +115,7 @@ assert.deepEqual(shadowDiff(42, 42), undefined);
 assert.deepEqual(shadowDiff(true, true), undefined);
 assert.deepEqual(shadowDiff(null, null), undefined);
 assert.deepEqual(shadowDiff([], []), undefined);
+
+// Validate that deletion requests of already absent members are discarded
+assert.deepEqual(shadowDiff({}, { b: null }), undefined);
+assert.deepEqual(shadowDiff({}, { b: { c: null } }), { b: {} });

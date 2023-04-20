@@ -1,9 +1,6 @@
 /* Copyright(C) 2022-2023 DiUS Computing Pty Ltd */
 const isDeepStrictEqual = require('util').isDeepStrictEqual;
-
-function isObject(x) {
-  return typeof(x) == 'object' && !Array.isArray(x) && (x != null);
-}
+const isObject = require('./is_object.js');
 
 
 function filterEmpty(o) {
@@ -11,6 +8,18 @@ function filterEmpty(o) {
     return o;
   else
     return (Object.keys(o).length > 0) ? o : undefined;
+}
+
+
+function removeDeletionRequests(o) {
+  if (!isObject(o))
+    return;
+  Object.keys(o).forEach(k => {
+    if (o[k] === null)
+      delete(o[k]);
+    else if (isObject(o[k]))
+      removeDeletionRequests(o[k]);
+  });
 }
 
 
@@ -22,8 +31,11 @@ function deepMissing(oldobj, newobj, out) {
   return Object.keys(newobj).reduce((diff, k) => {
     const a = (oldobj || {})[k];
     const b = newobj[k];
-    if (a === undefined)
+    if (a === undefined && b !== null) {
+      if (isObject(b))
+        removeDeletionRequests(b);
       diff[k] = b;
+    }
     else if (isObject(a) && isObject(b)) {
       const delta = deepMissing(a, b, {});
       // Only merge in non-empty deltas
@@ -72,7 +84,7 @@ function recursiveDiff(oldobj, newobj) {
  *   <object>   containing recursive differences between oldobj and newobj
  */
 function shadowDiff(oldobj, newobj) {
-  if (oldobj !== null && newobj === null) // deletion
+  if (oldobj != null && newobj === null) // deletion
     return null;
   else if (!isObject(oldobj) || !isObject(newobj)) // str, num, bool, array, etc
     return isDeepStrictEqual(oldobj, newobj) ? undefined : newobj;

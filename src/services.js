@@ -2,9 +2,10 @@
 'use strict';
 
 const shadowNormalise = require('./shadow_normalise.js');
+const shadowDiff = require('./shadow_diff.js');
+const isObject = require('./is_object.js');
 const fs = require('fs');
 const child_process = require('child_process');
-const isDeepStrictEqual = require('util').isDeepStrictEqual;
 const formats = fs.readdirSync(`${__dirname}/filefmt`)
   .filter(fname => fname.endsWith('.js'))
   .reduce((obj, fname) => {
@@ -96,12 +97,21 @@ function loadCurrentOutfile(svcdef) {
 
 
 function shouldNotify(picked, current, keylist) {
-  if (keylist == null)
-    return true;
-  for (const key of keylist)
-    if (!isDeepStrictEqual(picked[key], current[key]))
-      return true;
-  return false;
+  if (keylist == null || !isObject(picked) || !isObject(current))
+    return (shadowDiff(current, picked) !== undefined);
+  else {
+    const p = {};
+    const c = {};
+    for (const key of keylist)
+    {
+      // The shadowDiff does not accept key:undefined, so being careful here
+      if (picked[key] !== undefined)
+        p[key] = picked[key];
+      if (current[key] !== undefined)
+        c[key] = current[key];
+    }
+    return (shadowDiff(c, p) !== undefined);
+  }
 }
 
 
@@ -154,7 +164,7 @@ Service.prototype.handleOut = function(obj) {
   }
   const picked = pick(obj, this.outkeys);
   const current = this.getCurrentCfg();
-  if (isDeepStrictEqual(picked, current)) {
+  if (shadowDiff(current, picked) === undefined) {
     console.log(`No changes for service '${this.key}'.`);
     if (!initial || !this.initialnotify)
       return; // no changes, no notifications

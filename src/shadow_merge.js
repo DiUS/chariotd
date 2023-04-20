@@ -2,18 +2,14 @@
 'use strict';
 
 const normalise = require('./shadow_normalise.js');
-
-
-function isObjectObject(x) {
-  return x != null && typeof(x) == 'object' && !Array.isArray(x);
-}
+const isObject = require('./is_object.js');
 
 
 function shadowMerge(target, source) {
-  if (isObjectObject(target) && isObjectObject(source)) {
+  if (isObject(target) && isObject(source)) {
     for (const key in source) {
-      if (isObjectObject(source[key])) {
-        if (!isObjectObject(target[key]))
+      if (isObject(source[key])) {
+        if (!isObject(target[key]))
           target[key] = {}
         shadowMerge(target[key], source[key]);
       }
