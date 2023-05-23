@@ -1,0 +1,35 @@
+name: Release
+on:
+  push:
+    tags:
+      - '[1-9]+.[0-9]+.[0-9]+'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    name: Package and release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: current
+          cache: 'npm'
+      - name: Install packages
+        run: npm ci
+      - name: Update version
+        run: npm version --no-git-tag-version --force "$GITHUB_REF_NAME"
+      - name: Package
+        run: npm pack
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: chariotd-${{github.ref_name}}.tgz
+          draft: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true

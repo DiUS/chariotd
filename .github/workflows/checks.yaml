@@ -1,0 +1,33 @@
+name: Regression checks
+on:
+  push:
+    branches:
+      - '**'
+  schedule:  # Weekly runs to pick up on bitrot
+    - cron: '37 23 * * 0'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [9.11.2, lts/*, latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup nodejs ${{matrix.node-version}}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{matrix.node-version}}
+          cache: 'npm'
+      - name: Install packages
+        run: npm ci || npm install  # 9.11.2 doesn't grok "ci"
+      - name: Syntax check
+        run: npm run check
+      - name: Regression tests
+        run: npm run test
