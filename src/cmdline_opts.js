@@ -50,6 +50,11 @@ const cmdline = Getopt.create([
  [ '', 'last-will-payload=PAYLOAD',
    'register PAYLOAD as the last-will-and-testament' ],
 
+ [ '', 'subscribe-write=TOPIC:PATH+',
+   'subscribe to TOPIC, and write any received messages to PATH' ],
+ [ '', 'subscribe-exec=TOPIC:PATH+',
+   'subscribe to TOPIC, and invoke PATH for each message, passing it on stdin' ],
+
  [ 'h', 'help', 'this help' ]
 ]).bindHelp().parseSystem();
 

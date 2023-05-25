@@ -114,6 +114,32 @@ function delayedExit(sec) {
 }
 
 
+function bestEffortFileWrite(fname, data) {
+  const { O_NONBLOCK, O_WRONLY } = fs.constants;
+  try {
+    const fd = fs.openSync(fname, O_NONBLOCK | O_WRONLY);
+    fs.writeSync(fd, data);
+    fs.closeSync(fd);
+  }
+  catch(e) {
+    console.warn(`Failed to write to ${fname}: ${e}`);
+  }
+}
+
+
+function bestEffortExecWrite(fname, data) {
+  const child = child_process.execFile(fname, { timeout: 5000 }, err => {
+    if (err)
+      console.warn(`Failed to run ${fname}: ${err}`);
+  });
+  if (child.stdio != null) { // On launch failure, these aren't present :(
+    child.stdout.pipe(process.stdout);
+    child.stderr.pipe(process.stderr);
+    child.stdin.end(data);
+  }
+}
+
+
 // -- Setup phase --------------------------------------------------------
 
 var comms = null;
@@ -177,6 +203,17 @@ for (const arg of (options.tunnelmappings || [])) {
 if (options['empty-array-as-delete-request']) {
   require('./shadow_normalise.js').enableEmptyArrayDelete(true);
   console.info('Supporting empty array as delete request.');
+}
+
+// Note subscriptions, if any
+const subscriptions = {};
+for (const arg of (options['subscribe-write'] || [])) {
+  const [ topic, fname ] = splitArg(arg);
+  subscriptions[topic] = data => bestEffortFileWrite(fname, data);
+}
+for (const arg of (options['subscribe-exec'] || [])) {
+  const [ topic, fname ] = splitArg(arg);
+  subscriptions[topic] = data => bestEffortExecWrite(fname, data);
 }
 
 const shadows = {};
@@ -251,6 +288,14 @@ function connect() {
             `Failed to subscribe to tunnel topic for '${thing}': ${err}`);
       });
     }
+    for (const topic in subscriptions) {
+      comms.subscribe(topic, err => {
+        if (err != null)
+          console.warn(`Failed to subscripe to ${topic}: ${err}`);
+        else
+          console.log(`Subscribed to ${topic}`);
+      });
+    }
   });
   comms.on('status', (thing, stat, token, resp) => {
     comms_attempts = 0;
@@ -267,8 +312,13 @@ function connect() {
   });
   comms.on('message', (topic, payload) => {
     const tunnel = tunnel_topics[topic];
+    const subscription_handler = subscriptions[topic];
     if (tunnel != null)
       tunnel.handleMessage(payload);
+     else if (subscription_handler != null) {
+       console.log(`Received message on ${topic}`);
+       subscription_handler(payload);
+     }
   });
   comms.on('error', err => {
     console.error(`AWS IoT Core connection reported error: ${err}`);
