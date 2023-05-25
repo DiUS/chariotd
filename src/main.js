@@ -5,10 +5,12 @@
 const awsiot = require('aws-iot-device-sdk');
 const fs = require('fs');
 const child_process = require('child_process');
+const EventEmitter = require('events');
 const CertStore = require('./certstore.js');
 const Shadow = require('./shadow.js');
 const DirWatch = require('./dirwatch.js');
 const FleetProvisioning = require('./fleet_provisioning.js');
+const MessagePublisher = require('./message_publisher.js');
 const { SecureTunnel } = require('./secure_tunnel.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
@@ -68,32 +70,6 @@ function updateShadow(thing, dir, fname) {
 }
 
 
-function publishMessage(dir, fname) {
-  const obj = JSON.parse(fs.readFileSync(`${dir}/${fname}`));
-  for (const key of [ 'topic', 'payload' ])
-    if (obj[key] == null)
-      throw new Error(
-        `missing key '${obj[key]}' in '${fname}', unable to publish`);
-  console.log(`Publishing to ${obj.topic}...`);
-  return new Promise((resolve, reject) => {
-    comms.publish(
-      obj.topic,
-      JSON.stringify(obj.payload),
-      { qos: obj.qos != null ? obj.qos : 1 },
-      (err) => {
-        if (err)
-          reject(err);
-        else {
-          console.log(`Successfully published to ${obj.topic}.`);
-          comms_attempts = 0;
-          resolve();
-        }
-      }
-    );
-  })
-}
-
-
 function handleCommand(dir, fname) {
   switch(fname) {
     case 'refetch':
@@ -141,7 +117,6 @@ function delayedExit(sec) {
 // -- Setup phase --------------------------------------------------------
 
 var comms = null;
-var msgwatch = null;
 
 const certstore =
   new CertStore(options.certstore, options.cacert, options.clientid);
@@ -361,6 +336,38 @@ async function attemptFleetProvisioning() {
 }
 
 
+// -- Message publishing -------------------------------------------------
+
+var message_publisher = null;
+var msgwatch = null;
+
+
+function setupMessagePublishing(comm) {
+  // Create and wire up our adapter to the message publisher
+  const message_adapter = new EventEmitter();
+  comm.on('connect', () => message_adapter.emit('connected'));
+  comm.on('close', () => message_adapter.emit('disconnected'));
+  message_adapter.publish = function(topic, msg, opts) {
+    return new Promise((resolve, reject) => {
+      comm.publish(topic, msg, { qos: opts.qos != null ? opts.qos : 1 },
+        (err) => {
+          if (err) {
+            console.warn(`Failed to publish to ${topic}: ${err}`);
+            reject(err);
+          }
+          else {
+            console.log(`Successfully published to ${topic}.`);
+            comms_attempts = 0;
+            resolve();
+          }
+        }
+      );
+    });
+  };
+  return new MessagePublisher(options, message_adapter);
+}
+
+
 // -- Initial startup ----------------------------------------------------
 
 if (prepareLastWill())
@@ -387,7 +394,11 @@ else {
   // Late setup of messages watcher, as we need comms to be available
   if (options.messages != null) {
     console.info(`Establishing messages watcher on ${options.messages}`);
-    msgwatch = new DirWatch(options.messages, publishMessage);
+    message_publisher = setupMessagePublishing(comms);
+    msgwatch = new DirWatch(
+      options.messages,
+      (dir, fname) => message_publisher.add(dir, fname)
+    );
     msgwatch.rescan();
   }
 

@@ -21,6 +21,17 @@ const cmdline = Getopt.create([
  [ '', 'commands=DIR',
    'watch for command requests in DIR' ],
 
+ [ '', 'message-concurrency=N',
+   'the number of concurrent message uploads (default 10)' ],
+ [ '', 'message-retries=N',
+   'how many times to re-attempt to publish a message (default 2)' ],
+ [ '', 'message-order=ORDER',
+   'preferred upload order of messages, for un-prioritised messages; one of "lexical", "reverse-lexical", "newest-first", "oldest-first" (default "lexical")' ],
+ [ '', 'letterhead-file=PATH',
+   'source message letterhead from JSON file at PATH for each message' ],
+ [ '', 'letterhead-generator=PATH',
+   'source message letterhead by invoking the binary at PATH' ],
+
  [ '', 'tunnelmappings=THING:PORTMAPPINGS+',
    'accept tunnel requests for THING, using PORTMAPPINGS e.g. SSH=22,HTTP=80' ],
  [ '', 'tunnelproxy=PATH',
