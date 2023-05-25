@@ -10,8 +10,8 @@
  * If no max_failed is given, a default of 10 is used.
  *
  * In the case where files cannot be removed, an error message is logged
- * but no other action is taken. The one foreseen circumstance this might
- * happen is if the filesystem hits and error and gets remounted read-only.
+ * but no other action is taken. The one foreseen circumstance where this might
+ * happen is if the filesystem hits an error and gets remounted read-only.
  * Under that scenario outside intervention is required, but it is probably
  * still desirable to keep the application running even though the dirwatch
  * aspect has effectively stalled.
