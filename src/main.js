@@ -418,7 +418,8 @@ function createMessagePublisher(comm, dir) {
   const opts = {};
   const opt_keys = [
     'message-concurrency', 'message-retries', 'message-order',
-    'message-jam-timeout', 'letterhead-file', 'letterhead-path'
+    'message-jam-timeout', 'message-topic-prefix', 'message-topic-suffix',
+    'letterhead-file', 'letterhead-path'
   ];
   for (const key of opt_keys) {
     // Start with default, if set

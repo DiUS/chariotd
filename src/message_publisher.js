@@ -63,6 +63,9 @@ class MessagePublisher {
     else
       this._max_retries = DEFAULT_RETRIES;
 
+    this._topic_pfx = cfg['message-topic-prefix'] || '';
+    this._topic_sfx = cfg['message-topic-suffix'] || '';
+
     this._comms = comms;
     comms.on('connected', () => { this._on_connect(); } );
     comms.on('disconnected', () => { this._on_disconnect(); });
@@ -150,7 +153,8 @@ class MessagePublisher {
       return;
     }
 
-    this._comms.publish(letter.topic, letter.payload, opts)
+    const topic = `${this._topic_pfx}${letter.topic}${this._topic_sfx}`;
+    this._comms.publish(topic, letter.payload, opts)
     .finally(() => this._q.complete(item)) // No longer pending, regardless
     .then(() => item.promise.resolve())
     .catch(e => {
