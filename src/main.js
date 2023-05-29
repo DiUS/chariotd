@@ -23,7 +23,7 @@ function splitArg(x) {
   const res = x.split(':');
   if (res.length != 2)
     throw new Error(
-      `Malformed argument '${x}' - expected form of 'something:/path`);
+      `Malformed argument '${x}' - expected form of 'something:something-else`);
   return res;
 }
 
@@ -392,7 +392,7 @@ var message_publisher = null;
 var msgwatch = null;
 
 
-function setupMessagePublishing(comm) {
+function createMessagePublisher(comm, dir) {
   // Create and wire up our adapter to the message publisher
   const message_adapter = new EventEmitter();
   comm.on('connect', () => message_adapter.emit('connected'));
@@ -414,7 +414,30 @@ function setupMessagePublishing(comm) {
       );
     });
   };
-  return new MessagePublisher(options, message_adapter);
+  // Work out configuration for this message publisher
+  const opts = {};
+  const opt_keys = [
+    'message-concurrency', 'message-retries', 'message-order',
+    'message-jam-timeout', 'letterhead-file', 'letterhead-path'
+  ];
+  for (const key of opt_keys) {
+    // Start with default, if set
+    const def = 'default-'+key;
+    if (options[def] != null)
+      opts[key] = options[def];
+    // Override with per-dir, if set
+    for (const arg of (options[key] || [])) {
+      const [ optdir, val ] = splitArg(arg);
+      if (optdir == dir)
+        opts[key] = val;
+    }
+  }
+  const on_jam = () => {
+    console.error(
+      `Error: Message queue on ${dir} has jammed. Exiting for clean retry.`);
+    process.exit(1);
+  };
+  return new MessagePublisher(opts, message_adapter, on_jam);
 }
 
 
@@ -442,11 +465,11 @@ else {
   comms = connect();
 
   // Late setup of messages watcher, as we need comms to be available
-  if (options.messages != null) {
-    console.info(`Establishing messages watcher on ${options.messages}`);
-    message_publisher = setupMessagePublishing(comms);
+  for (const message_dir of (options.messages || [])) {
+    console.info(`Establishing messages watcher on ${message_dir}`);
+    message_publisher = createMessagePublisher(comms, message_dir);
     msgwatch = new DirWatch(
-      options.messages,
+      message_dir,
       (dir, fname) => message_publisher.add(dir, fname)
     );
     msgwatch.rescan();

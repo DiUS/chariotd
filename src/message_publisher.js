@@ -44,7 +44,7 @@ function fetchLetterhead(binfile) {
 
 class MessagePublisher {
 
-  constructor(cfg, comms) {
+  constructor(cfg, comms, jam_handler) {
     if (cfg['letterhead-file'] != null)
     {
       const lh = cfg['letterhead-file'];
@@ -67,11 +67,15 @@ class MessagePublisher {
     comms.on('connected', () => { this._on_connect(); } );
     comms.on('disconnected', () => { this._on_disconnect(); });
 
+    const jam_timeout_ms = (cfg['message-jam-timeout'] != null) ?
+      cfg['message-jam-timeout'] * 1000 : undefined;
     this._q = new MessageQueue({
       concurrency: cfg['message-concurrency'],
       order: cfg['message-order'],
+      jam_timeout: jam_timeout_ms,
     });
     this._q.on('item', item => this._on_item(item));
+    this._q.on('jammed', jam_handler);
     this._q.pause();
   }
 

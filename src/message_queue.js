@@ -4,7 +4,8 @@
 /* Message queue facility supporting various ways to prioritise messages.
  * new MessageQueue({
  *   concurrency: N,
- *   order: 'lexical'|'reverse-lexical'|'newest-first'|'oldest-first'
+ *   order: 'lexical'|'reverse-lexical'|'newest-first'|'oldest-first',
+ *   jam_timeout: ms
  * });
  * Expects message items to conform to:
  * {
@@ -13,6 +14,10 @@
  *   priority: number, (optional - default is to follow configured 'order')
  *   priority_slot: number | string (optional - default is no priority slot)
  * }
+ *
+ * Emits:
+ *   - 'item' with an added item as its argument.
+ *   - 'jammed' if no concurrency slots have become available in a long time
  */
 
 const BinHeap = require('./binheap.js');
@@ -20,6 +25,7 @@ const EventEmitter = require('events');
 
 const DEFAULT_CONCURRENCY = 10;
 const DEFAULT_UNSPECIFIED_PRIORITY = 1; // for priority_slot w/o priority
+const DEFAULT_JAM_TIMEOUT_MS = 5*60*1000;
 
 const sorters = {
   'lexical': (a, b) => a.name.localeCompare(b.name),
@@ -34,6 +40,7 @@ class MessageQueue extends EventEmitter {
     super();
 
     this._concurrency = opts.concurrency || DEFAULT_CONCURRENCY;
+    this._jam_timeout = opts.jam_timeout || DEFAULT_JAM_TIMEOUT_MS;
 
     this._prio_heap = new BinHeap((a, b) => a.priority - b.priority);
     this._bulk_heap = new BinHeap(sorters[opts.order || 'lexical']);
@@ -69,6 +76,7 @@ class MessageQueue extends EventEmitter {
     else
       this._bulk_heap.insert(item);
 
+    this._maybe_start_jam_timer();
     this._emit_as_needed();
   }
 
@@ -80,23 +88,27 @@ class MessageQueue extends EventEmitter {
         this._active_prio_slots.delete(item.priority_slot, item);
     }
     this._pending.delete(item);
+    this._stop_jam_timer();
     this._emit_as_needed();
   }
 
 
   pause() {
     this._paused = true;
+    this._stop_jam_timer();
   }
 
 
   resume() {
     this._paused = false;
+    this._maybe_start_jam_timer();
     this._emit_as_needed();
   }
 
 
   clearPending() {
     this._pending.clear();
+    this._stop_jam_timer();
     this._emit_as_needed();
   }
 
@@ -124,6 +136,22 @@ class MessageQueue extends EventEmitter {
       }
       else
         break;
+    }
+  }
+
+  _maybe_start_jam_timer() {
+    if (this._paused || this._jam_timer != null)
+      return;
+
+    if (this._pending.size == this._concurrency)
+      this._jam_timer = setTimeout(
+        () => this.emit('jammed'), this._jam_timeout);
+  }
+
+  _stop_jam_timer() {
+    if (this._jam_timer != null) {
+      clearTimeout(this._jam_timer);
+      delete(this._jam_timer);
     }
   }
 }
