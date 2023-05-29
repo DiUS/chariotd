@@ -134,7 +134,7 @@ One very important aspect to be aware of is that chariotd MUST be run under a se
 
 For embedded Linux systems, the service supervisor of choice is typically [runit](http://smarden.org/runit/), or the [BusyBox](https://busybox.net/) implementation thereof.
 
-When chariotd exists due to communications failure and there are multiple certificates available, prior to exiting it will update the `preferred` symlink to point to the next certificate. On the subsequent run it will then try using the different certificate. Repeat as necessary.
+When chariotd exits due to communications failure and there are multiple certificates available, prior to exiting it will update the `preferred` symlink to point to the next certificate. On the subsequent run it will then try using the different certificate. Repeat as necessary.
 
 
 ## Directory structures
@@ -408,8 +408,8 @@ An example will hopefully make things clear. Assume we have the following messag
 | :------: | :-------: | :------------ |
 |    A     |   23:12   |               |
 |    B     |   11:51   | `"priority"`: 2 |
-|    C     |   03:22   | `"priority_slot`": "xyz", `"priority"`: 1 |
-|    D     |   11:51   | `"priority_slot`": "xyz", `"priority"`: 1 |
+|    C     |   03:22   | `"priority_slot"`: "xyz", `"priority"`: 1 |
+|    D     |   11:51   | `"priority_slot"`: "xyz", `"priority"`: 1 |
 |    E     |   16:20   | `"priority"`: 3 |
 |    F     |   11:45   |               |
 
@@ -426,7 +426,7 @@ Here, C gets demoted from the priority queue when D is encountered, and gets put
 With basic ordering set to `oldest-first`, it would instead be:
 
 ```
-D -> B-> E-> > C -> F -> A
+D -> B -> E-> > C -> F -> A
 ```
 
 Again, C gets demoted when D is encountered, but due to its age goes before the other non-priority messages.
