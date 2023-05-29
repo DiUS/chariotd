@@ -9,12 +9,6 @@ What about the name, you ask? This project is the **c**ommon **h**andling for **
 
 Without delving into the details, here are some examples how the different facets might be used.
 
-### Posting to MQTT topics
-
-  1. Launch chariotd with `--messages` to listen for messages to upload: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --messages=/var/chariotd/mqtt`
-  1. Prepare a new message to publish: `echo '{ "topic": "mytopic/foo", "payload": { "key": "value", "key2": 2 } }' > /var/chariotd/mqtt/tmp/foomsg`
-  1. Publish it: `mv /var/chariotd/mqtt/tmp/foomsg /var/chariotd/mqtt/new/`
-
 ### Updating a device shadow
 
   1. Launch chariotd with `--updates` to listen for updates to apply to the device shadow: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --updates=MyThing:/var/chariotd/shadow`
@@ -51,6 +45,18 @@ Without delving into the details, here are some examples how the different facet
   1. Launch chariotd with `--fleetprov` to enable initial device provisioning via AWS fleet provisioning: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --fleetprov=/var/chariotd/fp.json`
   1. If there is no device certificate available in the certstore, a fleet provisioning attempt will be started, and if successful the new certificate is saved to the certstore.
 
+### Publishing to MQTT topics
+
+  1. Launch chariotd with `--messages` to watch for messages to upload: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --messages=/var/chariotd/mqtt`
+  1. Prepare a new message to publish: `echo '{ "topic": "mytopic/foo", "payload": { "key": "value", "key2": 2 } }' > /var/chariotd/mqtt/tmp/foomsg`
+  1. Publish it: `mv /var/chariotd/mqtt/tmp/foomsg /var/chariotd/mqtt/new/`
+
+### Subscribing to MQTT topics
+
+  1. Launch chariotd with one of `--subscribe-write` or `--subscribe-exec` to handle messages received on a topic, e.g.: `chariotd --clientid=myclient --cacert=/path/to/AmazonRootCA1.pem --certstore=/var/chariotd/certs --subscribe-exec=mytopic/foo:/path/to/handler`
+
+Now `/path/to/handler` will be executed whenever a message is received on `mytopic/foo` and passed the message on stdin.
+
 ### Using secure tunneling
 
   1. Ensure the [`localproxy`](https://github.com/aws-samples/aws-iot-securetunneling-localproxy) has been installed.
@@ -76,19 +82,50 @@ When running chariotd there are a few mandatory options:
 
 Past this the features are pick-and-choose.
 
+#### Fleet provisioning related
+
   - `--fleetprov` - Enables fleet provisioning with the specified configuration, which will be attempted in the absence of any device certificates and optionally on a command request. See the [Fleet provisioning](#fleet-provisioning) section for details on configuration.
+
+#### Device shadow related
+
   - `--services` - Loads service definitions for the specified thing and monitors the device shadow for updates to the corresponding parts of the shadow. Refer to [Service definitions](#service-definitions) for details.
   - `--updates` -- Tells chariotd to watch for requests to update a thing's device shadow. Details available in the [Shadow updates](#shadow-updates) section.
   - `--defaultshadow` - Enables seeding of a thing's device shadow if it does not yet exist. Refer to [Default shadow creation](#default-shadow-creation) for specifics on using this feature.
+  - `--empty-array-as-delete-request` - Specifies that empty arrays should be treated the same as `"DELETE"`, i.e. as a request to remove a key from the shadow. This was the early canonical way of submitting such requests, and this feature is provided for backwards compatibility and should not typically need to be used.
+
+#### Message publishing related
+
   - `--messages` - Instructs chariotd to watch for MQTT publish requests. The specifics are available in the [Message publishing](#message-publishing) section.
-  - `--commands` - Makes chariotd listen for command requests. Available commands which may be sent are listed in the [Command requests](#command-requests) section.
-  - `--keepalive` - This can be used to override the keepalive interval, which by default is set to 1200. Devices communicating through a [NAT](https://en.wikipedia.org/wiki/Network_address_translation) device may need to use a lower keepalive interval to avoid the session state expiring in the NAT device.
+  - `--default-message-concurrency` and `--message-concurrency` - Controls how many inflight messages should be allowed.
+  - `--default-message-retries` and `--message-retries` - Configures how many extra attempts will be made to publish a message.
+  - `--default-message-jam-timeout` and `--message-jam-timeout` - Sets the time before declaring a message queue jam.
+  - `--default-message-order` and `--message-order` - Sets the preferred upload order of messages.
+  - `--default-message-topic-prefix` and `--message-topic-prefix` - Modifies the topic in each message with the given prefix.
+  - `--default-message-topic-suffix` and `--message-topic-suffix` - Modifies the topic in each message with the given suffix.
+  - `--default-letterhead-file` and `--letterhead-file` - Specifies a static letterhead for messages.
+  - `--default-letterhead-generator` and `--letterhead-generator` - Specifies a dynamic letterhead for meesages.
+
+#### Message subscription related
+
+Refer to the [Message subscription](#message-subscription) sections for details.
+
+ - `--subscribe-write` - Subscribes to a topic and writes received messages to the specified destination (such as a named pipe).
+ - `--subscribe-exec` - Subscribes to a topic and executes the specified application whever a message is received, passing said message to the launched process via its stdin.
+
+#### Secure Tunneling related
+
   - `--tunnelmappings` - Enables listening for AWS IoT Secure Tunneling requests. Details available in the [Secure Tunneling](#secure-tunneling) section.
   - `--tunnelproxy` - Specifies the path to the secure tunneling proxy client to use.
   - `--tunnelcadir` - Specifies the directory where the tunnel proxy client can find the Amazon root CA certificate in an OpenSSL compatible format.
-  - `--empty-array-as-delete-request` - Specifies that empty arrays should be treated the same as `"DELETE"`, i.e. as a request to remove a key from the shadow. This was the early canonical way of submitting such requests, and this feature is provided for backwards compatibility and should not typically need to be used.
+
+#### Last Will & Testament related
+
   - `--last-will-topic` - Sets the topic any Last-Will-and-Testament payload should be published to. To be used in conjunction with `--last-will-payload`.
   - `--last-will-payload` - Specifies the payload of a Last-Will-and-Testament message to be registered with the AWS IoT Gateway, to be published if the client disconnects unexpectedly. The destination topic is set with `--last-will-topic`.
+
+#### Miscellaneous
+  - `--commands` - Makes chariotd listen for command requests. Available commands which may be sent are listed in the [Command requests](#command-requests) section.
+  - `--keepalive` - This can be used to override the keepalive interval, which by default is set to 1200. Devices communicating through a [NAT](https://en.wikipedia.org/wiki/Network_address_translation) device may need to use a lower keepalive interval to avoid the session state expiring in the NAT device.
 
 
 ## Restarting chariotd
@@ -310,14 +347,35 @@ Directory structure: [action directory](#action-directories)
 
 Allows userspace processes to publish messages to MQTT topics by way of writing files to the watched directory.
 
+This option may be specified more than once, in order to watch for message upload requests in multiple action directories. Each action directory may be configured separately, for example allowing for different letterheads or topic prefixes.
+
+There are several message configuration options, and each of them come in two flavours - default, and directory-specific. As implied, a value set using the default option applies to all message directories, unless overridden. A directory-specific option on the other hand, applies a setting only to that instance and *overrides the default value*.
+
+### Message publishing concurrency, retries and timeouts
+
+Each message publishing action directory has a setting for how many messages it will allow to be inflight at the same time. This is governed by the `--default-message-concurrency=N` or `--message-concurrency=/path/to/msgs:N` command line option, where at most `N` messages will be published-but-not-yet-acknowledged at any given time. This value may be tuned to suit your needs, and the optimal value will depend on many things such as QoS levels used, network latency and tendency for a backlog to build up. The default `N` is set to 10. It should be noted that increasing this value may in fact make things slower, and in some circumstances reducing it down to 1 could yield the best result.
+
+In the interest of reliability, messages may be attempted to be published more than once if at first the publishing is unsuccessful. This is controlled via the `--default-message-retries=N` or `--message-retries=/path/to/msgs:N` where `N` is the number of *retries* (i.e. one less than the total number of attempts). If no retries are desired, this may be set to zero. If a message fails after the retry limit has been reached, the message will be moved to the `failed` directory.
+
+To prevent message publishing from stalling silently, each message publishing action directory has an associated "jam" detection time that can be configured. Whenever the publisher reaches the maximum concurrency this timer starts, and if none of the inflight messages get acknowledged before the timer expires, a queue jam is declared. This will trigger chariotd to exit in order to be relaunched with fresh state, in the hope that this will resolve the publishing blockage.
+
+The queue jam timer is configured with `--default-message-jam-timeout=SEC` or `--message-jam-timeout=/path/to/msgs:SEC` where `SEC` is the number of seconds to allow before declaring a jam. The default is 300 (5 minutes), which should be an excessive but safe default.
+
+### Message topic modifications
+
+While each message contains the topic it is destined for, that topic may be modified by way of a prefix and/or a suffix. This may be necessary for reasons such as routing messages into a test environment, or appending a device-unique identifier to easily achieve device-unique topics.
+
+The topic prefix may be configured using `--default-message-topic-prefix=PREFIX` or `--message-topic-prefix=/path/to/msgs:PREFIX`. The suffix may be similarly configured using `--default-message-topic-suffix=SUFFIX` or `--message-topic-suffix=/path/to/msgs:SUFFIX`.
+
 ### Message file naming
 
 The file name has no special meaning. To avoid name conflicts it is recommended that each writer uses a prefix unique to said writer. Depending on whether only the latest message from a writer is desired, or all messages, a suffix containing a timestamp may be used to avoid overwriting previous unprocessed files. This scenario often comes up while the device is out of network connectivity. Be sure to implement some manner of disk space limiting to avoid filling a disk and being unable to buffer new messages.
 
-
 ### Message file content
 
 The message file is in [JSON](https://www.json.org) and contains two mandatory top-level keys - `topic` and `payload`. Optionally the key `qos` may be used to indicate the MQTT quality-of-service level to request. The default QoS is 1, for "at least once" delivery.
+
+The payload itself may be given either as an object, in which case it will be JSON encoded prior to publishing, or it may be given as a string in which case no addition encoding is done.
 
 ```
 {
@@ -329,6 +387,112 @@ The message file is in [JSON](https://www.json.org) and contains two mandatory t
   }
 }
 ```
+
+#### Priority handling
+
+Sometimes it is of relevance in which order messages are published. In a sunny-day scenario all messages are immediately published as soon as they are created, but at less sunny times a backlog will build up. How said backlog is handled is what the priority handling is all about. There are three types of priority ordering supported by chariotd:
+
+  - Basic ordering
+  - Priority ordering
+  - Priority-slot based ordering
+
+Basic ordering is configured at launch time by the `--default-message-order` and `--message-order` options. These may be set to one of the following values: `lexical`, `reverse-lexical`, `newest-first` or `oldest-first`. If not specified at all, it will default to `lexical`, meaning the backlog will be processed based on the message filenames. For the time-based options, the filesystem's `mtime` is used, which would typically correspond to the creation time of said message.
+
+Priority ordering allows individual messages to "jump the queue". Any message with a `priority` key set will be given preferential treatment and published before messages without a priority key. This is ideal for messages which may not be desirable to have linger in the backlog, such as latest status messages. The `priority` key itself is a numeric value, with smaller numbers having higher priority. A message with `"priority": 1` will be published before one with `"priority": 2` (assuming they're in the backlog, of course).
+
+Priority-slot based ordering expands upon the priority ordering. In many cases what's wanted is not to have *all* status messages prioritised, only the *newest*. This is where priority slots come in. A message with a `priority_slot` key *only gets priority if its newer* than the previously newest backlogged message with the *same* `priority_slot` key. Multiple message producers may (and should) use their own `priority_slot` values (strings are recommended, ideally the name of the producer). When a `priority_slot` marked message is indeed the newest, it is put into the priority queue with its specified `priority`, or 1 if the `priority` key was not present. Any message which is (already, or no longer) the newest gets demoted to the default queue and published according to the basic ordering.
+
+An example will hopefully make things clear. Assume we have the following messages waiting when chariotd is started, thus making them go straight into the backlog:
+
+| Filename | Timestamp | Priority keys |
+| :------: | :-------: | :------------ |
+|    A     |   23:12   |               |
+|    B     |   11:51   | `"priority"`: 2 |
+|    C     |   03:22   | `"priority_slot`": "xyz", `"priority"`: 1 |
+|    D     |   11:51   | `"priority_slot`": "xyz", `"priority"`: 1 |
+|    E     |   16:20   | `"priority"`: 3 |
+|    F     |   11:45   |               |
+
+
+With basic ordering set to the default, the publishing order would be:
+
+```
+D -> B -> E -> A -> C -> F
+```
+
+Here, C gets demoted from the priority queue when D is encountered, and gets put after A due to lexical ordering.
+
+
+With basic ordering set to `oldest-first`, it would instead be:
+
+```
+D -> B-> E-> > C -> F -> A
+```
+
+Again, C gets demoted when D is encountered, but due to its age goes before the other non-priority messages.
+
+#### Payload compression
+
+The message payload may be automatically compressed right before publishing by setting the `compress` key to a supported value. The following are supported:
+
+  - `deflate` - Compress using the ["deflate"](https://datatracker.ietf.org/doc/html/rfc1950) algorithm.
+  - `gzip` - Compress into the ["gzip"](https://datatracker.ietf.org/doc/html/rfc1952) format (which may use `deflate` internally).
+
+Specifying an unsupported compression will result in a warning, and the message will be *published without compression*.
+
+If the `payload` is given as an object, then it is JSON encoded prior to compression. Otherwise the payload value is passed straight to the compressor.
+
+Example:
+```
+{
+  "topic": "my/topic",
+  "compress": "gzip",
+  "payload": {
+    "meaning": 42,
+    "supporting_data": [ 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, ... ]
+  }
+```
+
+### Letterheads
+
+In addition to the actual content in a message file, it is possible to also specify that a "letterhead" should be used. This is a JSON structure which is either loaded from a file or from the output of a process, and is used as the basis on which to overlay the content from the message file.
+
+The letterhead follows the same format as the message itself, and can for example be used to fill in constant fields, such as a device identifier. This could remove the need for the message creating process to have or pass through such knowledge. This may be of particular use on devices hosting multiple logical entities. Another potential benefit is that the letterhead may be changed without stopping the message generating process.
+
+Note that a letterhead is only loaded as a message is about to be published, and it is therefore **not** possible to set `priority` or `priority_slot` in the letterhead and have it take any effect.
+
+Also note that when both a default letterhead and a directory-specific letterhead are given, there is no "stacking" of the actual letterheads — the directory-specific letterhead *replaces* the default one.
+
+Letterheads are obtained in one of two ways — either from a file, or from the output of running a command.
+
+#### Letterhead from a file
+
+To source a letterhead from a file, use the command line option `--default-letterhead-file=/path/to/letterhead` or `--letterhead-file=/path/to/msgs:/path/to/letterhead`, for a default or directory-specific letterhead respectively.
+
+Right before publishing, the specified file is loaded and parsed from JSON into an object, and the message is applied on top of that object.
+
+If wishing to update the letterhead while chariotd is running, please ensure an atomic replace is used (same as with action directories) to avoid loading an incomplete file.
+
+Failing to obtain the letterhead will result in a failure to publish the message.
+
+#### Letterhead from a command
+
+To source a letterhead from a command, use the command line option `--default-letterhead-generator=/path/to/command` or `--letterhead-generator=/path/to/msgs:/path/to/command` for a default or directory-specific letterhead respectively.
+
+Right before publishing, the specified command (*without arguments*) is executed and its output is parsed from JSON into an object, and the message is applied on top of that object. If the generator commands needs arguments, please use a wrapper shell script.
+
+Failing to obtain the letterhead will result in a failure to publish the message.
+
+## Message subscription
+
+In addition to allowing other applications to publish messages, chariotd supports subscribing to topics and passing received messages through to other applications. Two mechanisms are provided:
+
+  - Write each message to a given path (such as a named pipe).
+  - Run a command for each message and hand the process the message via stdin.
+
+To write received message somewhere, use the command line option `--subscribe-write=TOPIC:/path/to/write/to`. When used, `TOPIC` will be subscribed to and whenever a message is received, `/path/to/write/to` is opened in write-only, non-blocking mode before having the message written and the file descriptor closed again. Any error during either of those steps will result in a warning in the log and the loss of the message.
+
+To hand received messages over to a sub-process, use the command line option `--subscribe-exec=TOPIC:/path/to/command`. When used, `TOPIC` will be subscribed to and whenever a message is received, `/path/to/command` will be executed and passed the message on its stdin. Note that in order to avoid what might otherwise amount to a [fork bomb](https://en.wikipedia.org/wiki/Fork_bomb) the running of the command is done synchronously, ensuring only a single command is run at any one time. While this may slow down message processing, it is deemed the lesser evil. However, the handling command is run with a strict timeout of 5 seconds to avoid leaving chariotd waiting for too long. Errors will result in a warning in the log and the loss of the message.
 
 
 ## Command requests

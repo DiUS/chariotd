@@ -143,6 +143,8 @@ class MessagePublisher {
         letter.payload = zlib.gzipSync(letter.payload);
       else if (letter.compress == 'deflate')
         letter.payload = zlib.deflateSync(letter.payload);
+      else
+        console.warn(`Ignoring unsupported compression "${letter.compress}"`);
 
       // Copy supported options
       [ 'qos' ].forEach(k => opts[k] = letter[k]);
