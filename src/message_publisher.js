@@ -33,10 +33,19 @@ function loadJson(fname) {
 }
 
 
-function fetchLetterhead(binfile) {
+function fetchLetterhead(binfile,item) {
+  // Provide message metadata to the letterhead generator via environment
+  const env = Object.assign({}, process.env);
+  const keys = [ 'topic', 'timestamp', 'priority', 'priority_slot' ];
+  for (const key of keys)
+    env[`MESSAGE_${key.toUpperCase()}`] = item[key];
+  env.MESSAGE_TIMESTAMP_S = Math.floor(item.timestamp/1000);
+  env.MESSAGE_FILENAME = item.name;
+
   const opts = {
     timeout: 5000,
     encoding: 'utf8',
+    env: env,
   };
   return JSON.parse(child_process.execFileSync(binfile, opts));
 }
@@ -45,15 +54,13 @@ function fetchLetterhead(binfile) {
 class MessagePublisher {
 
   constructor(cfg, comms, jam_handler) {
-    if (cfg['letterhead-file'] != null)
-    {
+    if (cfg['letterhead-file'] != null) {
       const lh = cfg['letterhead-file'];
       this._blank_letterhead = () => loadJson(lh);
     }
-    else if (cfg['letterhead-generator'] != null)
-    {
+    else if (cfg['letterhead-generator'] != null) {
       const lh = cfg['letterhead-generator'];
-      this._blank_letterhead = () => fetchLetterhead(lh);
+      this._blank_letterhead = item => fetchLetterhead(lh, item);
     }
     else
       this._blank_letterhead = () => { return {}; };
@@ -94,6 +101,7 @@ class MessagePublisher {
         timestamp: fs.statSync(filename).mtimeMs,
         priority_slot: preview.priority_slot,
         priority: preview.priority,
+        topic: `${this._topic_pfx}${preview.topic}${this._topic_sfx}`,
 
         promise: {},
       };
@@ -125,7 +133,7 @@ class MessagePublisher {
     const opts = {};
     var letter;
     try {
-      letter = this._blank_letterhead();
+      letter = this._blank_letterhead(item);
       merge(letter, loadJson(item.name));
 
       // Ensure the mandatory keys are present
@@ -155,8 +163,8 @@ class MessagePublisher {
       return;
     }
 
-    const topic = `${this._topic_pfx}${letter.topic}${this._topic_sfx}`;
-    this._comms.publish(topic, letter.payload, opts)
+    // Note: we've precomputed the pfx+topic+sfx as item.topic, so use it
+    this._comms.publish(item.topic, letter.payload, opts)
     .finally(() => this._q.complete(item)) // No longer pending, regardless
     .then(() => item.promise.resolve())
     .catch(e => {

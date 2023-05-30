@@ -481,6 +481,19 @@ To source a letterhead from a command, use the command line option `--default-le
 
 Right before publishing, the specified command (*without arguments*) is executed and its output is parsed from JSON into an object, and the message is applied on top of that object. If the generator commands needs arguments, please use a wrapper shell script.
 
+Message metadata is provided to the generator command via environment variables.
+
+| Variable | Content |
+| :------- | :------ |
+| `MESSAGE_TOPIC` | The full topic string, after any prefix/suffix has been applied |
+| `MESSAGE_FILENAME` | The name of the file containing the message |
+| `MESSAGE_TIMESTAMP` | The timestamp of the message, in ms from the epoch, including fractional part, e.g. `1685412652205.3308` |
+| `MESSAGE_TIMESTAMP_S` | The timestamp of the message, in seconds from the epoch, excluding the fractional part, e.g. `1685412652` |
+| `MESSAGE_PRIORITY` | The `priority` field from the message, if available |
+| `MESSAGE_PRIORITY_SLOT` | The `priority_slot` field from the message, if available |
+
+Note that while the priority fields are available to the letterhead generator, setting them has no impact as the letterhead is only generated once the message has already made it to the head of the queue and is ready to be published.
+
 Failing to obtain the letterhead will result in a failure to publish the message.
 
 ## Message subscription
