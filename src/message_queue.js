@@ -128,8 +128,8 @@ class MessageQueue extends EventEmitter {
 
       if (item != null) {
         if (item.priority_slot != null &&
-            this._active_priority_slots.get(item.priority_slot) === item)
-          this._active_priority_slots.delete(item);
+            this._active_prio_slots.get(item.priority_slot) === item)
+          this._active_prio_slots.delete(item);
 
         this._pending.add(item);
         this.emit('item', item);
