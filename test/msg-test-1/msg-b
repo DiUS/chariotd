@@ -1,0 +1,7 @@
+{
+  "topic": "x/b",
+  "priority": 3,
+  "payload": {
+    "value": "important"
+  }
+}

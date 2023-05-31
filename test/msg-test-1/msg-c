@@ -1,0 +1,8 @@
+{
+  "topic": "x/c",
+  "priority_slot": "ZYY",
+  "compress": "deflate",
+  "payload": {
+    "json": "encoded and deflated"
+  }
+}

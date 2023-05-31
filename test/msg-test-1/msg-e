@@ -1,0 +1,7 @@
+{
+  "topic": "x/e",
+  "payload": {
+    "something": 1,
+    "else": true
+  }
+}
