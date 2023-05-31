@@ -165,9 +165,12 @@ class MessagePublisher {
 
     // Note: we've precomputed the pfx+topic+sfx as item.topic, so use it
     this._comms.publish(item.topic, letter.payload, opts)
-    .finally(() => this._q.complete(item)) // No longer pending, regardless
-    .then(() => item.promise.resolve())
+    .then(() => {
+      this._q.complete(item);
+      item.promise.resolve();
+    })
     .catch(e => {
+      this._q.complete(item);
       item.retries = (item.retries || 0) + 1;
       if (item.retries < this._max_retries)
         this._q.add(item); // Not uploaded, try again
