@@ -38,10 +38,11 @@ function fetchLetterhead(binfile, item, was_prioritised) {
   const env = Object.assign({}, process.env);
   const keys = [ 'topic', 'timestamp', 'priority', 'priority_slot' ];
   for (const key of keys)
-    env[`MESSAGE_${key.toUpperCase()}`] = item[key];
+    if (item[key] !== undefined)
+      env[`MESSAGE_${key.toUpperCase()}`] = item[key];
   env.MESSAGE_TIMESTAMP_S = Math.floor(item.timestamp/1000);
   env.MESSAGE_FILENAME = item.name;
-  env.MESSAGE_WAS_PRIORITISED = was_prioritised ? '1' : undefined;
+  env.MESSAGE_WAS_PRIORITISED = was_prioritised ? '1' : '';
 
   const opts = {
     timeout: 5000,
