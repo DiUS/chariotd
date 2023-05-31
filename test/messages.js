@@ -10,6 +10,11 @@ const merge = require('../src/merge.js');
 
 class TestAdapter extends EventEmitter {
 
+  constructor(payload_is_json) {
+    super();
+    this._payload_is_json = payload_is_json;
+  }
+
   setExpectations(expected_items) {
     this._exp = expected_items;
   }
@@ -20,6 +25,9 @@ class TestAdapter extends EventEmitter {
 
     if (e.compress == 'deflate')
       msg = zlib.inflateSync(msg).toString();
+
+    if (this._payload_is_json)
+      msg = JSON.parse(msg);
 
     assert.equal(topic, e.topic);
     assert.deepStrictEqual(msg, e.payload);
@@ -98,6 +106,48 @@ async function check(title, dir, cfg, order) {
   }).then(() => console.log('Ok'));
 }
 
+
+async function checkAgainstReference(title, dir, cfg) {
+  process.stdout.write(`Checking: ${title}...`);
+  dir = `${__dirname}/${dir}`;
+  const ta = new TestAdapter(true); // decode paylod from JSON for assert
+  const mp = new MessagePublisher(cfg, ta, () => assert(false));
+
+  const filenames =
+    fs.readdirSync(dir).filter(f => f.startsWith('msg-')).sort();
+  set_mtime_order(dir, [...filenames].reverse());
+
+  const promises = [];
+  const items = [];
+  const expectations = [];
+  for (const fname of filenames) {
+    promises.push(mp.add(dir, fname));
+
+    const msg = JSON.parse(fs.readFileSync(`${dir}/${fname}`));
+    const item = {
+      topic: msg.topic,
+      payload: JSON.stringify(msg.payload),
+      compress: msg.compress,
+      opts: { qos: msg.qos }
+    };
+    items.push(item);
+
+    const exp = Object.assign({}, item);
+    exp.payload = JSON.parse(fs.readFileSync(`${dir}/ref-${fname}`));
+    expectations.push(exp);
+  }
+
+  ta.setExpectations(expectations);
+
+  setImmediate(() => ta.connect());
+
+  return await Promise.all(promises).catch(e => {
+    console.error(e);
+    process.exit(1);
+  }).then(() => console.log('Ok'));
+}
+
+
 (async () => {
   await check(
     'Default ordering, no concurrency',
@@ -168,4 +218,14 @@ async function check(title, dir, cfg, order) {
     },
     [ 2, 1, 0, 3, 4 ]
   );
+
+  await checkAgainstReference(
+    'Dynamic letterhead',
+    '/msg-test-2',
+    {
+      ['letterhead-generator']: `${__dirname}/msg-test-2/letterheadcmd`,
+    },
+    [ 0 ]
+  );
+
 })();

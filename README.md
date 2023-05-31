@@ -103,7 +103,7 @@ Past this the features are pick-and-choose.
   - `--default-message-topic-prefix` and `--message-topic-prefix` - Modifies the topic in each message with the given prefix.
   - `--default-message-topic-suffix` and `--message-topic-suffix` - Modifies the topic in each message with the given suffix.
   - `--default-letterhead-file` and `--letterhead-file` - Specifies a static letterhead for messages.
-  - `--default-letterhead-generator` and `--letterhead-generator` - Specifies a dynamic letterhead for meesages.
+  - `--default-letterhead-generator` and `--letterhead-generator` - Specifies a dynamic letterhead for messages.
 
 #### Message subscription related
 
@@ -400,7 +400,7 @@ Basic ordering is configured at launch time by the `--default-message-order` and
 
 Priority ordering allows individual messages to "jump the queue". Any message with a `priority` key set will be given preferential treatment and published before messages without a priority key. This is ideal for messages which may not be desirable to have linger in the backlog, such as latest status messages. The `priority` key itself is a numeric value, with smaller numbers having higher priority. A message with `"priority": 1` will be published before one with `"priority": 2` (assuming they're in the backlog, of course).
 
-Priority-slot based ordering expands upon the priority ordering. In many cases what's wanted is not to have *all* status messages prioritised, only the *newest*. This is where priority slots come in. A message with a `priority_slot` key *only gets priority if its newer* than the previously newest backlogged message with the *same* `priority_slot` key. Multiple message producers may (and should) use their own `priority_slot` values (strings are recommended, ideally the name of the producer). When a `priority_slot` marked message is indeed the newest, it is put into the priority queue with its specified `priority`, or 1 if the `priority` key was not present. Any message which is (already, or no longer) the newest gets demoted to the default queue and published according to the basic ordering.
+Priority-slot based ordering expands upon the priority ordering. In many cases what's wanted is not to have *all* status messages prioritised, only the *newest*. This is where priority slots come in. A message with a `priority_slot` key *only gets priority if its newer* than the previously newest backlogged message with the *same* `priority_slot` key. Multiple message producers may (and should) use their own `priority_slot` values (strings are recommended, ideally the name of the producer). When a `priority_slot` marked message is indeed the newest, it is put into the priority queue with its specified `priority`, or 1 if the `priority` key was not present. Any message which is (already not, or no longer) the newest gets demoted to the default queue and published according to the basic ordering.
 
 An example will hopefully make things clear. Assume we have the following messages waiting when chariotd is started, thus making them go straight into the backlog:
 
@@ -491,6 +491,7 @@ Message metadata is provided to the generator command via environment variables.
 | `MESSAGE_TIMESTAMP_S` | The timestamp of the message, in seconds from the epoch, excluding the fractional part, e.g. `1685412652` |
 | `MESSAGE_PRIORITY` | The `priority` field from the message, if available |
 | `MESSAGE_PRIORITY_SLOT` | The `priority_slot` field from the message, if available |
+| `MESSAGE_WAS_PRIORITISED` | Set to 1 if the message came from the priority queue, empty otherwise. Note that messages with a `priority_slot` which were demoted to the default queue will *not* have this set. |
 
 Note that while the priority fields are available to the letterhead generator, setting them has no impact as the letterhead is only generated once the message has already made it to the head of the queue and is ready to be published.
 

@@ -1,0 +1,8 @@
+{
+  "topic": "x/a",
+  "priority": 6,
+  "priority_slot": "msg-test-2",
+  "payload": {
+    "hello": "world"
+  }
+}

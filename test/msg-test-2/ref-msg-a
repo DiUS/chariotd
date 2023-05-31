@@ -1,0 +1,9 @@
+{
+  "hello": "world",
+  "topic": "x/a",
+  "priority": "6",
+  "priority_slot": "msg-test-2",
+  "timestamp": "present",
+  "timestamp_s": "present",
+  "was_prioritised": "1"
+}

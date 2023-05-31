@@ -1,0 +1,13 @@
+#!/bin/bash
+cat << EOF
+{
+  "payload": {
+    "topic": "${MESSAGE_TOPIC}",
+    "timestamp": "${MESSAGE_TIMESTAMP:+present}",
+    "timestamp_s": "${MESSAGE_TIMESTAMP_S:+present}",
+    "priority": "${MESSAGE_PRIORITY}",
+    "priority_slot": "${MESSAGE_PRIORITY_SLOT}",
+    "was_prioritised": "${MESSAGE_WAS_PRIORITISED}"
+  }
+}
+EOF

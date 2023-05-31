@@ -123,7 +123,8 @@ class MessageQueue extends EventEmitter {
       return;
 
     while (this._pending.size < this._concurrency) {
-      const item = (this._prio_heap.size() > 0) ? this._prio_heap.pop() :
+      const have_priority = (this._prio_heap.size() > 0);
+      const item = have_priority ? this._prio_heap.pop() :
         (this._bulk_heap.size() > 0) ? this._bulk_heap.pop() : null;
 
       if (item != null) {
@@ -132,7 +133,8 @@ class MessageQueue extends EventEmitter {
           this._active_prio_slots.delete(item);
 
         this._pending.add(item);
-        this.emit('item', item);
+        // Note: let the publisher know whether this is a priority message
+        this.emit('item', item, have_priority);
       }
       else
         break;

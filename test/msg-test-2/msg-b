@@ -1,0 +1,6 @@
+{
+  "topic": "x/b",
+  "payload": {
+    "hello": "again"
+  }
+}

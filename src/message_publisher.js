@@ -33,7 +33,7 @@ function loadJson(fname) {
 }
 
 
-function fetchLetterhead(binfile,item) {
+function fetchLetterhead(binfile, item, was_prioritised) {
   // Provide message metadata to the letterhead generator via environment
   const env = Object.assign({}, process.env);
   const keys = [ 'topic', 'timestamp', 'priority', 'priority_slot' ];
@@ -41,6 +41,7 @@ function fetchLetterhead(binfile,item) {
     env[`MESSAGE_${key.toUpperCase()}`] = item[key];
   env.MESSAGE_TIMESTAMP_S = Math.floor(item.timestamp/1000);
   env.MESSAGE_FILENAME = item.name;
+  env.MESSAGE_WAS_PRIORITISED = was_prioritised ? '1' : undefined;
 
   const opts = {
     timeout: 5000,
@@ -60,7 +61,8 @@ class MessagePublisher {
     }
     else if (cfg['letterhead-generator'] != null) {
       const lh = cfg['letterhead-generator'];
-      this._blank_letterhead = item => fetchLetterhead(lh, item);
+      this._blank_letterhead =
+        (item, was_prioritised) => fetchLetterhead(lh, item, was_prioritised);
     }
     else
       this._blank_letterhead = () => { return {}; };
@@ -84,7 +86,8 @@ class MessagePublisher {
       order: cfg['message-order'],
       jam_timeout: jam_timeout_ms,
     });
-    this._q.on('item', item => this._on_item(item));
+    this._q.on('item',
+      (item, was_prioritised) => this._on_item(item, was_prioritised));
     this._q.on('jammed', jam_handler);
     this._q.pause();
   }
@@ -129,11 +132,11 @@ class MessagePublisher {
     // Also clear queue? Or can we rely on the mqtt.js buffering of msgs?
   }
 
-  _on_item(item) {
+  _on_item(item, was_prioritised) {
     const opts = {};
     var letter;
     try {
-      letter = this._blank_letterhead(item);
+      letter = this._blank_letterhead(item, was_prioritised);
       merge(letter, loadJson(item.name));
 
       // Ensure the mandatory keys are present
