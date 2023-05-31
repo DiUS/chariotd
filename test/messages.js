@@ -37,13 +37,19 @@ class TestAdapter extends EventEmitter {
   }
 };
 
+function canUpdateMTime(path) {
+  const pre = fs.statSync(path).mtimeMs;
+  const t = pre - 1000;
+  fs.utimesSync(path, t, t);
+  const post = fs.statSync(path).mtimeMs;
+  return (post != pre);
+}
+
 function set_mtime_order(dir, fnames) {
   const base = new Date().getTime();
   for (var t = base - fnames.length; fnames.length > 0; t = t + 1) {
     const fname = fnames.shift();
-console.log(`\nDEBUG setting mtime for ${fname} to ${t}`);
     fs.utimesSync(`${dir}/${fname}`, t, t);
-console.log(`DEBUG         mtime for ${fname} IS ${fs.statSync(`${dir}/${fname}`).mtimeMs/1000}`);
   }
 }
 
@@ -122,23 +128,27 @@ async function check(title, dir, cfg, order) {
     [ 2, 1, 4, 3, 0 ]
   );
 
-  await check(
-    'Newest-first ordering',
-    '/msg-test-1',
-    {
-      ['message-order']: 'newest-first',
-    },
-    [ 2, 1, 4, 3, 0 ]
-  );
+  if (canUpdateMTime(`${__dirname}/msg-test-1/msg-a`)) {
+    await check(
+      'Newest-first ordering',
+      '/msg-test-1',
+      {
+        ['message-order']: 'newest-first',
+      },
+      [ 2, 1, 4, 3, 0 ]
+    );
 
-  await check(
-    'Oldest-first ordering',
-    '/msg-test-1',
-    {
-      ['message-order']: 'oldest-first',
-    },
-    [ 2, 1, 0, 3, 4 ]
-  );
+    await check(
+      'Oldest-first ordering',
+      '/msg-test-1',
+      {
+        ['message-order']: 'oldest-first',
+      },
+      [ 2, 1, 0, 3, 4 ]
+    );
+  }
+  else
+    console.warn(`WARNING: mtime updating is broken on this system?!`);
 
   await check(
     'Topic prefixing',
