@@ -50,7 +50,8 @@ function u2e(x) {
   return x === undefined ? '' : x;
 }
 
-async function check(dir, cfg, order) {
+async function check(title, dir, cfg, order) {
+  process.stdout.write(`Checking: ${title}...`);
   dir = `${__dirname}/${dir}`;
   const ta = new TestAdapter();
   const mp = new MessagePublisher(cfg, ta, () => assert(false));
@@ -87,11 +88,12 @@ async function check(dir, cfg, order) {
   return await Promise.all(promises).catch(e => {
     console.error(e);
     process.exit(1);
-  });
+  }).then(() => console.log('Ok'));
 }
 
 (async () => {
   await check(
+    'Default ordering, no concurrency',
     '/msg-test-1',
     {
       ['message-order']: 'lexical',
@@ -101,6 +103,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Default ordering, with concurrency',
     '/msg-test-1',
     {
       ['message-order']: 'lexical',
@@ -110,6 +113,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Reverse lexical ordering',
     '/msg-test-1',
     {
       ['message-order']: 'reverse-lexical',
@@ -118,6 +122,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Newest-first ordering',
     '/msg-test-1',
     {
       ['message-order']: 'newest-first',
@@ -126,6 +131,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Oldest-first ordering',
     '/msg-test-1',
     {
       ['message-order']: 'oldest-first',
@@ -134,6 +140,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Topic prefixing',
     '/msg-test-1',
     {
       ['message-topic-prefix']: 'pre|',
@@ -143,6 +150,7 @@ async function check(dir, cfg, order) {
   );
 
   await check(
+    'Static letterhead',
     '/msg-test-1',
     {
       ['letterhead-file']: `${__dirname}/msg-test-1/letterhead`,
