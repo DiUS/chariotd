@@ -41,8 +41,7 @@ function set_mtime_order(dir, fnames) {
   const base = new Date().getTime();
   for (var t = base - fnames.length; fnames.length > 0; t = t + 1) {
     const fname = fnames.shift();
-    const d = new Date(t);
-    fs.utimesSync(`${dir}/${fname}`, d, d);
+    fs.utimesSync(`${dir}/${fname}`, t, t);
   }
 }
 
