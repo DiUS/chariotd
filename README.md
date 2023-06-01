@@ -98,6 +98,7 @@ Past this the features are pick-and-choose.
   - `--messages` - Instructs chariotd to watch for MQTT publish requests. The specifics are available in the [Message publishing](#message-publishing) section.
   - `--default-message-concurrency` and `--message-concurrency` - Controls how many inflight messages should be allowed.
   - `--default-message-retries` and `--message-retries` - Configures how many extra attempts will be made to publish a message.
+  - `--default-message-keep-failed` and `--message-keep-failed` - Adjusts the limit of how many failed messages are kept around.
   - `--default-message-jam-timeout` and `--message-jam-timeout` - Sets the time before declaring a message queue jam.
   - `--default-message-order` and `--message-order` - Sets the preferred upload order of messages.
   - `--default-message-topic-prefix` and `--message-topic-prefix` - Modifies the topic in each message with the given prefix.
@@ -356,6 +357,8 @@ There are several message configuration options, and each of them come in two fl
 Each message publishing action directory has a setting for how many messages it will allow to be inflight at the same time. This is governed by the `--default-message-concurrency=N` or `--message-concurrency=/path/to/msgs:N` command line option, where at most `N` messages will be published-but-not-yet-acknowledged at any given time. This value may be tuned to suit your needs, and the optimal value will depend on many things such as QoS levels used, network latency and tendency for a backlog to build up. The default `N` is set to 10. It should be noted that increasing this value may in fact make things slower, and in some circumstances reducing it down to 1 could yield the best result.
 
 In the interest of reliability, messages may be attempted to be published more than once if at first the publishing is unsuccessful. This is controlled via the `--default-message-retries=N` or `--message-retries=/path/to/msgs:N` where `N` is the number of *retries* (i.e. one less than the total number of attempts). If no retries are desired, this may be set to zero. If a message fails after the retry limit has been reached, the message will be moved to the `failed` directory.
+
+The number of messages kept around in the `failed` directory is limited, in order to avoid filling up the disk. By default only 100 failed messages are kept, but this can be adjusted by the `--default-message-keep-failed=N` and `--message-keep-failed=DIR:N` commandline options.
 
 To prevent message publishing from stalling silently, each message publishing action directory has an associated "jam" detection time that can be configured. Whenever the publisher reaches the maximum concurrency this timer starts, and if none of the inflight messages get acknowledged before the timer expires, a queue jam is declared. This will trigger chariotd to exit in order to be relaunched with fresh state, in the hope that this will resolve the publishing blockage.
 

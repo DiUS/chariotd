@@ -15,6 +15,7 @@ const { SecureTunnel } = require('./secure_tunnel.js');
 const services = require('./services.js');
 const { options } = require('./cmdline_opts.js');
 
+const DEFAULT_FAILED_MESSAGE_KEEP_COUNT = 100;
 
 // --- Helper functions --------------------------------------------------
 
@@ -137,6 +138,24 @@ function bestEffortExecWrite(fname, data) {
     child.stderr.pipe(process.stderr);
     child.stdin.end(data);
   }
+}
+
+
+function optionsForDirectory(dir, opt_keys) {
+  const opts = {};
+  for (const key of opt_keys) {
+    // Start with default, if set
+    const def = 'default-'+key;
+    if (options[def] != null)
+      opts[key] = options[def];
+    // Override with per-dir, if set
+    for (const arg of (options[key] || [])) {
+      const [ optdir, val ] = splitArg(arg);
+      if (optdir == dir)
+        opts[key] = val;
+    }
+  }
+  return opts;
 }
 
 
@@ -414,25 +433,14 @@ function createMessagePublisher(comm, dir) {
       );
     });
   };
-  // Work out configuration for this message publisher
-  const opts = {};
+
   const opt_keys = [
     'message-concurrency', 'message-retries', 'message-order',
     'message-jam-timeout', 'message-topic-prefix', 'message-topic-suffix',
     'letterhead-file', 'letterhead-generator'
   ];
-  for (const key of opt_keys) {
-    // Start with default, if set
-    const def = 'default-'+key;
-    if (options[def] != null)
-      opts[key] = options[def];
-    // Override with per-dir, if set
-    for (const arg of (options[key] || [])) {
-      const [ optdir, val ] = splitArg(arg);
-      if (optdir == dir)
-        opts[key] = val;
-    }
-  }
+  const opts = optionsForDirectory(dir, opt_keys);
+
   const on_jam = () => {
     console.error(
       `Error: Message queue on ${dir} has jammed. Exiting for clean retry.`);
@@ -469,9 +477,14 @@ else {
   for (const message_dir of (options.messages || [])) {
     console.info(`Establishing messages watcher on ${message_dir}`);
     message_publisher = createMessagePublisher(comms, message_dir);
+    const keep_failed_key = 'message-keep-failed';
+    const opts = optionsForDirectory(message_dir, [ keep_failed_key ]);
+    if (opts[keep_failed_key] == null)
+      opts[keep_failed_key] = DEFAULT_FAILED_MESSAGE_KEEP_COUNT;
     msgwatch = new DirWatch(
       message_dir,
-      (dir, fname) => message_publisher.add(dir, fname)
+      (dir, fname) => message_publisher.add(dir, fname),
+      { max_failed: opts['message-keep-failed'] }
     );
     msgwatch.rescan();
   }

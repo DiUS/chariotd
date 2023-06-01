@@ -147,6 +147,22 @@ async function checkAgainstReference(title, dir, cfg) {
   }).then(() => console.log('Ok'));
 }
 
+async function checkRetries(dir, n) {
+  process.stdout.write(`Checking: Retries (${n})...`);
+  dir = `${__dirname}/${dir}`;
+  const ta = new TestAdapter();
+  var attempts = 0;
+  ta.publish = () => { attempts = attempts + 1; return Promise.reject(); };
+  const mp = new MessagePublisher(
+    { ['message-retries'] : n }, ta, () => assert(false));
+  const p = mp.add(dir, 'msg-a');
+  setImmediate(() => ta.connect());
+  return p.then(() => process.exit(1))
+  .catch(e => {
+    assert.equal(attempts, n+1);
+    console.log('Ok');
+  });
+}
 
 (async () => {
   await check(
@@ -228,4 +244,6 @@ async function checkAgainstReference(title, dir, cfg) {
     [ 0 ]
   );
 
+  await checkRetries('msg-test-2', 4);
+  await checkRetries('msg-test-2', 0);
 })();

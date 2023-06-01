@@ -163,6 +163,7 @@ class MessagePublisher {
     }
     catch(e) {
       console.warn(`Error loading letterhead/message: ${e}`);
+      this._q.complete(item);
       item.promise.reject(e);
       return;
     }
@@ -176,10 +177,10 @@ class MessagePublisher {
     .catch(e => {
       this._q.complete(item);
       item.retries = (item.retries || 0) + 1;
-      if (item.retries < this._max_retries)
+      if (item.retries <= this._max_retries)
         this._q.add(item); // Not uploaded, try again
       else
-        item.promise.reject(e);
+        item.promise.reject('retries exhausted');
     })
   }
 
