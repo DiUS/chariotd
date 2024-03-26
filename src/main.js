@@ -382,7 +382,7 @@ async function attemptFleetProvisioning() {
         services.stringifyOut(cfg.outformat, { thing, configuration }));
     }
     else
-      console.info(`Discarded unwanted thing configuration data:`, resp);
+      console.info(`Discarded unwanted thing configuration data:`, resp.configuration);
     if (cfg.notifycmd) {
       console.info(`Notifying provisioning handler.`);
       const opts = {
