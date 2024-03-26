@@ -13,8 +13,8 @@
   "author": "jmattsson@dius.com.au",
   "license": "GPL-2.0",
   "dependencies": {
-    "aws-iot-device-sdk": "2.2.12",
-    "node-getopt": "0.3.2"
+    "aws-iot-device-sdk": "2.2.13",
+    "node-getopt": "https://github.com/tuxpoldo/node-getopt.git#05e498731c14b648fa332ca78d3a301c5e4be440"
   },
   "bundledDependencies": [
     "aws-iot-device-sdk",
