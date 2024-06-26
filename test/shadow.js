@@ -96,6 +96,14 @@ const svc6 = new Service({ // notifykeys filter with dynamic validate
   getCurrentCfg: () => slowClone(svc6.cfg),
 });
 
+const svc7 = new Service({ // fixed read-back cfg
+  key: 'svc7',
+  outfile: 'svc7.json',
+  outformat: 'JSON',
+  writeout: (cfg) => storeCfg(svc7, cfg),
+  getCurrentCfg: () => slowClone({ value: 1234 }),
+});
+
 // Cleanup
 
 function clear()
@@ -115,6 +123,7 @@ function clear()
 
 const shadow1 =
   new Shadow(mock_comms, THING, { svc1, svc2, svc3, svc4, svc5, svc6 });
+const shadow2 = new Shadow(mock_comms, THING, { svc7 });
 
 // Validate initial processing of services/configs
 shadow1.onFetchStatus('accepted', { state: {} }); // fetch pending after new
@@ -212,13 +221,6 @@ assert(svc1.notified);
 assert.deepEqual(svc1.cfg, []);
 clear();
 
-// Validate suppression of existing empty arrays (delete request)
-ShadowNormalise.enableEmptyArrayDelete(true);
-shadow1.onFetchStatus('accepted', { state: { reported: { svc1: [] }}});
-assert.deepEqual(mock_comms.last_update_state.reported.svc1, null);
-ShadowNormalise.enableEmptyArrayDelete(false);
-clear();
-
 // Validate that no merge is attempted on fetch with no desired
 const reported_nomerge = {
   svc1: { x: 1 },
@@ -248,7 +250,7 @@ clear();
 
 // Validate no notification of ephemeraldata service in absence of data
 shadow1.fetch();
-shadow1.onFetchStatus('accepted', { state: { reported: {}}});
+shadow1.onFetchStatus('accepted', { state: { desired: {}}});
 assert(!svc2.notified);
 clear();
 
@@ -256,7 +258,17 @@ clear();
 svc6._initial = true;
 svc6.cfg = { no: 1 };
 shadow1.fetch();
-shadow1.onFetchStatus('accepted', { state: { reported: { svc6: svc6.cfg }}});
+shadow1.onFetchStatus('accepted', { state: { desired: { svc6: svc6.cfg }}});
 assert(!svc6.notified);
 clear();
 
+// Validate that outdated reported data gets updated on a fetch
+shadow2.fetch();
+shadow2.onFetchStatus('accepted', { state: { reported: { svc7: { foo: 10 }}}});
+assert.deepEqual(mock_comms.last_update_state, {
+  reported: {
+    svc7: { foo: null, value: 1234 }
+  },
+  desired: null,
+});
+clear();

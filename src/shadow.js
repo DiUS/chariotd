@@ -60,6 +60,15 @@ function processServiceCfg(svc, cfgOld, cfgDelta, onCfgDiff) {
 }
 
 
+function processOldReportedCfg(svc, cfgOld, onCfgDiff) {
+  const diff = shadowDiff(cfgOld, svc.getCurrentCfg());
+  if (!svc.ephemeraldata && diff !== undefined) {
+    console.log(`Reported values for ${svc.key} outdated, updating.`);
+    onCfgDiff(diff);
+  }
+}
+
+
 function Shadow(comms, thingName, svcs, default_cmd) {
   this._comms = comms;
   this._thing = thingName;
@@ -123,10 +132,11 @@ Shadow.prototype.onFetchStatus = function(stat, resp) {
     const upd = {};
     for (const key in this._svcs) {
       const svc = this._svcs[key];
-      if (svc != null)
-        processServiceCfg(svc, reported[key], desired[key], (diff) => {
-          upd[key] = diff;
-        });
+      if (svc != null) {
+        const ondiff = (diff) => { upd[key] = diff; }
+        processOldReportedCfg(svc, reported[key], ondiff);
+        processServiceCfg(svc, svc.getCurrentCfg(), desired[key], ondiff);
+      }
     }
     if (Object.keys(upd).length > 0)
       this.update({ reported: upd, desired: null });
