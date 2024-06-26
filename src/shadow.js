@@ -63,7 +63,7 @@ function processServiceCfg(svc, cfgOld, cfgDelta, onCfgDiff) {
 function processOldReportedCfg(svc, cfgOld, onCfgDiff) {
   const diff = shadowDiff(cfgOld, svc.getCurrentCfg() || {});
   if (!svc.ephemeraldata && diff !== undefined) {
-    console.log(`Reported values for ${svc.key} outdated, updating.`);
+    console.log(`Reported values for service '${svc.key}' outdated, updating.`);
     onCfgDiff(diff);
   }
 }
