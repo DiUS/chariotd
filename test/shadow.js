@@ -104,6 +104,15 @@ const svc7 = new Service({ // fixed read-back cfg
   getCurrentCfg: () => slowClone({ value: 1234 }),
 });
 
+const svc8 = new Service({ // always missing cfg
+  key: 'svc8',
+  outfile: 'svc8.json',
+  outformat: 'JSON',
+  writeout: (cfg) => storeCfg(svc8, cfg),
+  getCurrentCfg: () => undefined,
+});
+
+
 // Cleanup
 
 function clear()
@@ -124,6 +133,7 @@ function clear()
 const shadow1 =
   new Shadow(mock_comms, THING, { svc1, svc2, svc3, svc4, svc5, svc6 });
 const shadow2 = new Shadow(mock_comms, THING, { svc7 });
+const shadow3 = new Shadow(mock_comms, THING, { svc8 });
 
 // Validate initial processing of services/configs
 shadow1.onFetchStatus('accepted', { state: {} }); // fetch pending after new
@@ -268,6 +278,17 @@ shadow2.onFetchStatus('accepted', { state: { reported: { svc7: { foo: 10 }}}});
 assert.deepEqual(mock_comms.last_update_state, {
   reported: {
     svc7: { foo: null, value: 1234 }
+  },
+  desired: null,
+});
+clear();
+
+// Validate that reported shadow data gets cleared if local data missing
+shadow3.fetch();
+shadow3.onFetchStatus('accepted', { state: { reported: { svc8: { foo: 10 }}}});
+assert.deepEqual(mock_comms.last_update_state, {
+  reported: {
+    svc8: { foo: null }
   },
   desired: null,
 });
