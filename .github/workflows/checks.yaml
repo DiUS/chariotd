@@ -26,7 +26,7 @@ jobs:
           node-version: ${{matrix.node-version}}
           cache: 'npm'
       - name: Install packages
-        run: npm ci || npm install  # 9.11.2 doesn't grok "ci"
+        run: npm ci || npm install  # 10.24.1 doesn't grok "ci"
       - name: Syntax check
         run: npm run check
       - name: Regression tests
@@ -34,3 +34,18 @@ jobs:
       - name: Package audit
         if: matrix.node-version == 'latest'
         run: npm audit
+  release-checks:
+    name: Package but don't release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup nodejs
+        uses: actions/setup-node@v7
+        with:
+          node-version: current
+          cache: 'npm'
+      - name: Install packages
+        run: npm ci
+      - name: Package
+        run: npm pack
