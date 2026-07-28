@@ -1,5 +1,6 @@
+---
 name: Regression checks
-on:
+"on":
   push:
     branches:
       - '**'
@@ -25,6 +26,10 @@ jobs:
         with:
           node-version: ${{matrix.node-version}}
           cache: 'npm'
+      - name: Show versions
+        run: |
+          npm --version
+          node --version
       - name: Install packages
         run: npm ci || npm install  # 10.24.1 doesn't grok "ci"
       - name: Syntax check
