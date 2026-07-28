@@ -31,7 +31,7 @@ jobs:
           npm --version
           node --version
       - name: Install packages
-        run: npm ci || npm install  # 10.24.1 doesn't grok "ci"
+        run: npm ci
       - name: Syntax check
         run: npm run check
       - name: Regression tests
