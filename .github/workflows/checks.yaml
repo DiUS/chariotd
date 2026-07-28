@@ -37,7 +37,6 @@ jobs:
       - name: Regression tests
         run: npm run test
       - name: Package audit
-        if: matrix.node-version == 'latest'
         run: npm audit
   release-checks:
     name: Package but don't release
