@@ -8,13 +8,17 @@
   },
   "scripts": {
     "check": "find src -name '*.js' | while read f; do echo Checking: $f; node -c $f; done",
-    "test": "for t in test/*.js; do echo Running test: $t; ./$t || exit 1; done"
+    "test": "for t in test/*.js; do echo Running test: $t; ./$t || exit 1; done",
+    "preinstall": "npx force-resolutions"
   },
   "author": "jmattsson@dius.com.au",
   "license": "GPL-2.0",
   "dependencies": {
-    "aws-iot-device-sdk": "2.2.15",
+    "aws-iot-device-sdk": "2.2.16",
     "node-getopt": "https://github.com/tuxpoldo/node-getopt.git#05e498731c14b648fa332ca78d3a301c5e4be440"
+  },
+  "resolutions": {
+    "help-me": "^5.0.0"
   },
   "bundledDependencies": [
     "aws-iot-device-sdk",
