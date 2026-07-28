@@ -18,7 +18,7 @@
     "node-getopt": "^0.3.2"
   },
   "resolutions": {
-    "help-me": "^5.0.0"
+    "help-me": "5.0.0"
   },
   "bundledDependencies": [
     "aws-iot-device-sdk",
